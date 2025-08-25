@@ -100,6 +100,11 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         public HolochainConductorEnum HolochainConductorToUse { get; set; } = HolochainConductorEnum.HolochainProductionConductor;
 
         /// <summary>
+        /// The version of Holochain to use. This determines the protocol and API version for communication with the Holochain conductor.
+        /// </summary>
+        public HolochainVersion HolochainVersion { get; set; } = HolochainVersion.Holochain_0_5_2;
+
+        /// <summary>
         /// Set this to true if you wish HoloNET to allow only ONE Holochain Conductor to run at a time. The default is false.
         /// </summary>
         public bool OnlyAllowOneHolochainConductorToRunAtATime { get; set; } = false;

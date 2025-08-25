@@ -1,6 +1,7 @@
 ﻿using System;
 using NextGenSoftware.Logging;
 
+using NextGenSoftware.Holochain.HoloNET.Client.Core;
 namespace NextGenSoftware.Holochain.HoloNET.Client.Interfaces
 {
     public interface IHoloNETDNA
@@ -26,6 +27,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client.Interfaces
         HolochainConductorModeEnum HolochainConductorMode { get; set; }
         HolochainConductorEnum HolochainConductorToUse { get; set; }
         ConsoleColor InfoColour { get; set; }
+        HolochainVersion HolochainVersion { get; set; }
         string InstalledAppId { get; set; }
         string LogFileName { get; set; }
         LoggingMode FileLoggingMode { get; set; }
