@@ -29,6 +29,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client.Interfaces
         string InstalledAppId { get; set; }
         string LogFileName { get; set; }
         LoggingMode FileLoggingMode { get; set; }
+        HolochainVersion HolochainVersion { get; set; }
         LoggingMode ConsoleLoggingMode { get; set; }
         string LogPath { get; set; }
         bool LogToConsole { get; set; }
