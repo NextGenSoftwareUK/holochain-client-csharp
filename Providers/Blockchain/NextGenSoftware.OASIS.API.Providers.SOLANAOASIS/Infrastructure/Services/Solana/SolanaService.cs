@@ -1,8 +1,12 @@
-﻿using NextGenSoftware.OASIS.API.Core.Interfaces.Avatar;
+using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using NextGenSoftware.OASIS.API.Core.Interfaces.Avatar;
 using NextGenSoftware.OASIS.API.Core.Interfaces.NFT.Requests;
 using NextGenSoftware.OASIS.API.Core.Interfaces.Wallet.Requests;
 using NextGenSoftware.OASIS.API.Core.Objects.NFT.Requests;
 using NextGenSoftware.OASIS.API.Providers.SOLANAOASIS.Entities.DTOs.Requests;
+using NextGenSoftware.OASIS.API.Providers.SOLANAOASIS.Entities.DTOs.Responses;
 using NextGenSoftware.OASIS.API.Providers.SOLANAOASIS.Infrastructure.Entities.DTOs.Requests;
 using Solnet.Wallet;
 
@@ -886,5 +890,192 @@ public sealed class SolanaService(Account oasisAccount, IRpcClient rpcClient) : 
 
         OASISErrorHandling.HandleError(ref response, message);
         return response;
+    }
+
+    public async Task<OASISResult<CompileContractResult>> CompileContractAsync(CompileContractRequest request)
+    {
+        var result = new OASISResult<CompileContractResult>();
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        try
+        {
+            // Validate request
+            if (string.IsNullOrEmpty(request.SourceCodePath))
+            {
+                return HandleError<CompileContractResult>("Source code path is required");
+            }
+
+            // Use provided path directly or create temp directory
+            string buildDir = request.SourceCodePath;
+            bool useTempDir = false;
+            
+            // If path is a ZIP file, extract it
+            if (File.Exists(request.SourceCodePath) && request.SourceCodePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                useTempDir = true;
+                buildDir = Path.Combine(Path.GetTempPath(), "oasis_solana_build", Guid.NewGuid().ToString());
+                Directory.CreateDirectory(buildDir);
+                
+                ZipFile.ExtractToDirectory(request.SourceCodePath, buildDir);
+            }
+            else if (!Directory.Exists(request.SourceCodePath))
+            {
+                return HandleError<CompileContractResult>($"Source code path not found: {request.SourceCodePath}");
+            }
+
+            try
+            {
+                // Note: Cargo.lock version 4 compatibility issue
+                // If compilation fails with "lock file version 4 requires `-Znext-lockfile-bump`",
+                // this indicates a Rust toolchain compatibility issue. Users may need to:
+                // 1. Update their Rust toolchain to a version that supports lock file version 4
+                // 2. Or use a Rust toolchain that generates version 3 lock files
+                // 3. Or manually fix the Cargo.lock file before compilation
+                
+                // Run anchor build
+                var buildResult = await RunAnchorBuildAsync(buildDir);
+                
+                stopwatch.Stop();
+                
+                if (!buildResult.IsSuccess)
+                {
+                    result.Result = new CompileContractResult
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = buildResult.ErrorMessage,
+                        Output = buildResult.Output,
+                        DurationMs = stopwatch.ElapsedMilliseconds
+                    };
+                    result.IsError = true;
+                    result.Message = $"Compilation failed: {buildResult.ErrorMessage}";
+                    return result;
+                }
+
+                // Find compiled program
+                string deployDir = Path.Combine(buildDir, "target", "deploy");
+                string programSo = null;
+                string idlJson = null;
+                
+                if (Directory.Exists(deployDir))
+                {
+                    var soFiles = Directory.GetFiles(deployDir, "*.so");
+                    if (soFiles.Length > 0)
+                    {
+                        programSo = soFiles[0];
+                    }
+                    
+                    var idlFiles = Directory.GetFiles(deployDir, "*.json");
+                    if (idlFiles.Length > 0)
+                    {
+                        idlJson = idlFiles[0];
+                    }
+                }
+
+                result.Result = new CompileContractResult
+                {
+                    IsSuccess = true,
+                    ProgramPath = programSo,
+                    IdlPath = idlJson,
+                    Output = buildResult.Output,
+                    DurationMs = stopwatch.ElapsedMilliseconds
+                };
+                result.Message = "Contract compiled successfully";
+            }
+            finally
+            {
+                // Clean up temp directory if we created one
+                if (useTempDir)
+                {
+                    try
+                    {
+                        Directory.Delete(buildDir, true);
+                    }
+                    catch { /* Ignore cleanup errors */ }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            result.Result = new CompileContractResult
+            {
+                IsSuccess = false,
+                ErrorMessage = ex.Message,
+                DurationMs = stopwatch.ElapsedMilliseconds
+            };
+            result.IsError = true;
+            result.Message = $"Error compiling contract: {ex.Message}";
+            OASISErrorHandling.HandleError(ref result, ex.Message, ex);
+        }
+
+        return result;
+    }
+
+    private async Task<(bool IsSuccess, string ErrorMessage, string Output)> RunAnchorBuildAsync(string workingDirectory)
+    {
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "anchor",
+                Arguments = "build",
+                WorkingDirectory = workingDirectory,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            // Add Solana CLI to PATH
+            string solanaBinPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                ".local", "share", "solana", "install", "active_release", "bin");
+            
+            if (Directory.Exists(solanaBinPath))
+            {
+                string currentPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+                processInfo.Environment["PATH"] = $"{solanaBinPath}:{currentPath}";
+            }
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+            {
+                return (false, "Failed to start anchor build process", null);
+            }
+
+            string output = await process.StandardOutput.ReadToEndAsync();
+            string error = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            string combinedOutput = output + "\n" + error;
+            
+            if (process.ExitCode != 0)
+            {
+                return (false, $"Anchor build failed with exit code {process.ExitCode}", combinedOutput);
+            }
+
+            return (true, string.Empty, combinedOutput);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message, null);
+        }
+    }
+
+    private static void CopyDirectory(string sourceDir, string destDir)
+    {
+        Directory.CreateDirectory(destDir);
+        
+        foreach (string file in Directory.GetFiles(sourceDir))
+        {
+            string destFile = Path.Combine(destDir, Path.GetFileName(file));
+            File.Copy(file, destFile, true);
+        }
+        
+        foreach (string dir in Directory.GetDirectories(sourceDir))
+        {
+            string destSubDir = Path.Combine(destDir, Path.GetFileName(dir));
+            CopyDirectory(dir, destSubDir);
+        }
     }
 }

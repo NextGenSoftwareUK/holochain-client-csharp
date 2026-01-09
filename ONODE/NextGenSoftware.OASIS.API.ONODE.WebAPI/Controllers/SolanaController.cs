@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NextGenSoftware.OASIS.API.Core.Helpers;
 using NextGenSoftware.OASIS.API.Core.Objects.NFT.Request;
@@ -46,6 +49,52 @@ namespace NextGenSoftware.OASIS.API.ONODE.WebAPI.Controllers
         public async Task<OASISResult<SendTransactionResult>> SendTransaction([FromBody] SendTransactionRequest request)
         {
             return await _solanaService.SendTransaction(request);
+        }
+
+        /// <summary>
+        /// Compile a Solana smart contract (Anchor program)
+        /// </summary>
+        /// <param name="sourceCodeFile">Source code file (ZIP archive containing Anchor project)</param>
+        /// <returns>Compilation result with program path and IDL</returns>
+        [HttpPost]
+        [Route("CompileContract")]
+        public async Task<OASISResult<CompileContractResult>> CompileContract(IFormFile sourceCodeFile)
+        {
+            if (sourceCodeFile == null || sourceCodeFile.Length == 0)
+            {
+                return new OASISResult<CompileContractResult>
+                {
+                    IsError = true,
+                    Message = "Source code file is required"
+                };
+            }
+
+            // Save uploaded file to temp location
+            string tempZipPath = Path.Combine(Path.GetTempPath(), $"oasis_compile_{Guid.NewGuid()}.zip");
+            await using (var stream = new FileStream(tempZipPath, FileMode.Create))
+            {
+                await sourceCodeFile.CopyToAsync(stream);
+            }
+
+            try
+            {
+                var request = new CompileContractRequest
+                {
+                    SourceCodePath = tempZipPath
+                };
+                
+                return await _solanaService.CompileContractAsync(request);
+            }
+            finally
+            {
+                // Clean up temp file
+                try
+                {
+                    if (System.IO.File.Exists(tempZipPath))
+                        System.IO.File.Delete(tempZipPath);
+                }
+                catch { /* Ignore cleanup errors */ }
+            }
         }
     }
 }

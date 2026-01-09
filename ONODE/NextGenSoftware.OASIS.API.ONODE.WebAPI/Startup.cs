@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -229,7 +229,15 @@ TOGETHER WE CAN CREATE A BETTER WORLD...</b></b>
             // configure DI for application services
             // services.AddScoped<IAvatarService, AvatarService>(); // AvatarService is being phased out
             //services.AddScoped<IEmailService, EmailService>();
-            //services.AddScoped<ISolanaService, SolanaService>(); //TODO: Not sure we need this? Want to remove this along with all other services ASAP! Use Managers in OASIS.API.Core and OASIS.API.ONODE.Core instead!
+            // Register ISolanaService with factory to provide required dependencies
+            services.AddScoped<ISolanaService>(sp =>
+            {
+                // Create a default account and RPC client for compilation
+                // These are minimal dependencies - actual wallet operations will use avatar's wallet
+                var account = new Solnet.Wallet.Account();
+                var rpcClient = Solnet.Rpc.ClientFactory.GetClient("https://api.devnet.solana.com");
+                return new SolanaService(account, rpcClient);
+            });
             //services.AddScoped<ICargoService, CargoService>();
             //services.AddScoped<INftService, NftService>();
             //services.AddScoped<IOlandService, OlandService>();
