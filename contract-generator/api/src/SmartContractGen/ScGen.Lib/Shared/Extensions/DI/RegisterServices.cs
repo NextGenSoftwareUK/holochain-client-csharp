@@ -53,7 +53,11 @@ public static class RegisterServices
                         "http://localhost:3002",
                         "https://localhost:3000",
                         "http://localhost:33123",
-                        "http://127.0.0.1:33123")
+                        "http://127.0.0.1:33123",
+                        "https://studio.assetrail.xyz",
+                        "https://studio.metabricks.xyz",
+                        "https://api.metabricks.xyz",
+                        "https://x402.metabricks.xyz")
                       .AllowAnyHeader()
                       .AllowAnyMethod()
                       .AllowCredentials();
