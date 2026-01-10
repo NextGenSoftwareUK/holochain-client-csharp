@@ -345,7 +345,7 @@ namespace NextGenSoftware.OASIS.STAR.WebAPI.Controllers
         {
             try
             {
-                var result = await _starAPI.Zomes.SearchAsync<STARZome>(AvatarId, searchTerm, searchOnlyForCurrentAvatar, showAllVersions, version);
+                var result = await _starAPI.Zomes.SearchAsync<STARZome>(AvatarId, searchTerm, default, null, MetaKeyValuePairMatchMode.All, searchOnlyForCurrentAvatar, showAllVersions, version);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -637,7 +637,7 @@ namespace NextGenSoftware.OASIS.STAR.WebAPI.Controllers
         public string Description { get; set; } = "";
         public HolonType HolonSubType { get; set; } = HolonType.Zome;
         public string SourceFolderPath { get; set; } = "";
-        public ISTARNETCreateOptions<STARZome, STARNETDNA> CreateOptions { get; set; } = null;
+        public ISTARNETCreateOptions<STARZome, STARNETDNA>? CreateOptions { get; set; } = null;
     }
 
     public class EditZomeRequest

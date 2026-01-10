@@ -726,7 +726,7 @@ namespace NextGenSoftware.OASIS.STAR.WebAPI.Controllers
         public string Description { get; set; } = "";
         public HolonType HolonSubType { get; set; } = HolonType.Park;
         public string SourceFolderPath { get; set; } = "";
-        public ISTARNETCreateOptions<STARNETHolon, STARNETDNA> CreateOptions { get; set; } = null;
+        public ISTARNETCreateOptions<STARNETHolon, STARNETDNA>? CreateOptions { get; set; } = null;
     }
 
     public class EditParkRequest

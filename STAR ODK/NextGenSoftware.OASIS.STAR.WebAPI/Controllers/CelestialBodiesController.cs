@@ -683,7 +683,7 @@ namespace NextGenSoftware.OASIS.STAR.WebAPI.Controllers
         public string Description { get; set; } = "";
         public HolonType HolonSubType { get; set; } = HolonType.STARCelestialBody;
         public string SourceFolderPath { get; set; } = "";
-        public ISTARNETCreateOptions<STARCelestialBody, STARNETDNA> CreateOptions { get; set; } = null;
+        public ISTARNETCreateOptions<STARCelestialBody, STARNETDNA>? CreateOptions { get; set; } = null;
     }
 
     public class EditCelestialBodyRequest

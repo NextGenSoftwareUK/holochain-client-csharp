@@ -3,6 +3,7 @@ using NextGenSoftware.OASIS.API.Native.EndPoint;
 using NextGenSoftware.OASIS.STAR.DNA;
 using NextGenSoftware.OASIS.Common;
 using NextGenSoftware.OASIS.API.Core.Exceptions;
+using System.IO;
 
 namespace NextGenSoftware.OASIS.STAR.WebAPI.Controllers
 {
@@ -73,9 +74,14 @@ namespace NextGenSoftware.OASIS.STAR.WebAPI.Controllers
             {
                 Console.WriteLine($"STAR Ignite Request: UserName = {request?.UserName ?? "admin"}");
                 var starAPI = GetSTARAPI();
+                
+                // Get the correct path to OASIS_DNA.json
+                var dnaPath = Path.Combine(AppContext.BaseDirectory, "OASIS_DNA.json");
+                
                 var result = await starAPI.BootOASISAsync(
                     request?.UserName ?? "admin", 
-                    request?.Password ?? "admin"
+                    request?.Password ?? "admin",
+                    dnaPath
                 );
                 Console.WriteLine($"STAR Ignite Result: IsError = {result.IsError}, Message = {result.Message}");
                 if (result.IsError)

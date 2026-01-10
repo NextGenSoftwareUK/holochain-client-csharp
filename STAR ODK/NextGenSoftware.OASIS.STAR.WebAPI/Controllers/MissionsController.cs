@@ -876,7 +876,7 @@ namespace NextGenSoftware.OASIS.STAR.WebAPI.Controllers
         public string Description { get; set; } = "";
         public HolonType HolonSubType { get; set; } = HolonType.Mission;
         public string SourceFolderPath { get; set; } = "";
-        public ISTARNETCreateOptions<Mission, STARNETDNA> CreateOptions { get; set; } = null;
+        public ISTARNETCreateOptions<Mission, STARNETDNA>? CreateOptions { get; set; } = null;
     }
 
     public class EditMissionRequest

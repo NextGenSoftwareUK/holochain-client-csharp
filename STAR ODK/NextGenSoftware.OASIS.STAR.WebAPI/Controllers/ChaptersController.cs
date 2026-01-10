@@ -629,7 +629,7 @@ namespace NextGenSoftware.OASIS.STAR.WebAPI.Controllers
         public string Description { get; set; } = "";
         public HolonType HolonSubType { get; set; } = HolonType.Chapter;
         public string SourceFolderPath { get; set; } = "";
-        public ISTARNETCreateOptions<Chapter, STARNETDNA> CreateOptions { get; set; } = null;
+        public ISTARNETCreateOptions<Chapter, STARNETDNA>? CreateOptions { get; set; } = null;
     }
 
     public class EditChapterRequest
