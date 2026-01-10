@@ -1,4 +1,5 @@
 using System;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using NBitcoin.RPC;
@@ -3258,7 +3259,7 @@ public class SolanaOASIS : OASISStorageProviderBase, IOASISStorageProvider, IOAS
             }
 
             // Unlock token by transferring from bridge pool to recipient
-            var bridgePoolPrivateKey = Convert.ToBase64String(_oasisSolanaAccount.PrivateKey.KeyBytes);
+            var bridgePoolPrivateKey = Base58Encode(_oasisSolanaAccount.PrivateKey.KeyBytes);
             var sendRequest = new SendWeb3TokenRequest
             {
                 FromTokenAddress = request.TokenAddress,
@@ -3404,7 +3405,7 @@ public class SolanaOASIS : OASISStorageProviderBase, IOASISStorageProvider, IOAS
 
             result.Result = new NextGenSoftware.OASIS.API.Core.Objects.KeyPairAndWallet()
             {
-                PrivateKey = Convert.ToBase64String(account.PrivateKey.KeyBytes),
+                PrivateKey = Base58Encode(account.PrivateKey.KeyBytes),
                 PublicKey = account.PublicKey.Key,
                 WalletAddressLegacy = account.PublicKey.Key
             };
@@ -3480,7 +3481,7 @@ public class SolanaOASIS : OASISStorageProviderBase, IOASISStorageProvider, IOAS
 
             result.Result = (
                 PublicKey: account.PublicKey.Key,
-                PrivateKey: Convert.ToBase64String(account.PrivateKey.KeyBytes),
+                PrivateKey: Base58Encode(account.PrivateKey.KeyBytes),
                 SeedPhrase: mnemonic.ToString()
             );
             result.IsError = false;
@@ -3516,7 +3517,7 @@ public class SolanaOASIS : OASISStorageProviderBase, IOASISStorageProvider, IOAS
 
             result.Result = (
                 PublicKey: account.PublicKey.Key,
-                PrivateKey: Convert.ToBase64String(account.PrivateKey.KeyBytes)
+                PrivateKey: Base58Encode(account.PrivateKey.KeyBytes)
             );
             result.IsError = false;
         }
@@ -3944,5 +3945,42 @@ public class SolanaOASIS : OASISStorageProviderBase, IOASISStorageProvider, IOAS
             return false;
         }
     }
+    #endregion
+
+    #region Helper Methods
+
+    /// <summary>
+    /// Encode byte array to Base58 string (Solana format)
+    /// </summary>
+    private static string Base58Encode(byte[] data)
+    {
+        const string alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+        if (data == null || data.Length == 0)
+            return string.Empty;
+
+        // Convert byte array to BigInteger
+        BigInteger intData = 0;
+        for (int i = 0; i < data.Length; i++)
+        {
+            intData = intData * 256 + data[i];
+        }
+
+        // Encode BigInteger to Base58 string
+        var encoded = new StringBuilder();
+        while (intData > 0)
+        {
+            intData = BigInteger.DivRem(intData, 58, out var remainder);
+            encoded.Insert(0, alphabet[(int)remainder]);
+        }
+
+        // Add leading zeros (represented as '1' in Base58)
+        for (int i = 0; i < data.Length && data[i] == 0; i++)
+        {
+            encoded.Insert(0, '1');
+        }
+
+        return encoded.ToString();
+    }
+
     #endregion
 }
