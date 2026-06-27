@@ -5,7 +5,6 @@ using NextGenSoftware.Logging;
 using NextGenSoftware.Utilities;
 using NextGenSoftware.Utilities.ExtentionMethods;
 using NextGenSoftware.Holochain.HoloNET.Client.Interfaces;
-using System.Text.Json;
 
 namespace NextGenSoftware.Holochain.HoloNET.Client
 {
@@ -87,129 +86,13 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
             try
             {
-                // Check if we should use JSON-RPC 2.0 protocol (Holochain 0.5.2)
-                if (HoloNETDNA?.HolochainVersion == HolochainVersion.Holochain_0_5_2)
-                {
-                    return DecodeDataReceivedHolochain052(rawBinaryData, dataReceivedEventArgs);
-                }
-                else
-                {
-                    // Use legacy MessagePack protocol (Redux/RSM)
-                    return DecodeDataReceivedLegacy(rawBinaryData, dataReceivedEventArgs);
-                }
-            }
-            catch (Exception ex)
-            {
-                string msg = "Error in HoloNETClient.DecodeDataReceived method.";
-                HandleError(msg, ex);
-            }
-
-            return response;
-        }
-
-        /// <summary>
-        /// Decodes data received using JSON-RPC 2.0 protocol (Holochain 0.5.2)
-        /// </summary>
-        protected virtual IHoloNETResponse DecodeDataReceivedHolochain052(byte[] rawBinaryData, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
-        {
-            try
-            {
-                // Convert binary data to string for JSON parsing
-                string jsonString = DataHelper.DecodeBinaryDataAsUTF8(rawBinaryData);
-                Logger.Log($"JSON-RPC 2.0 Response: {jsonString}", LogType.Debug);
-
-                // Parse JSON-RPC 2.0 response
-                var jsonResponse = JsonSerializer.Deserialize<JsonElement>(jsonString);
-                
-                // Create HoloNET response object
-                var response = new HoloNETResponse();
-                
-                // Extract JSON-RPC 2.0 fields
-                if (jsonResponse.TryGetProperty("id", out var idElement))
-                {
-                    // Handle different id types (string, number, etc.)
-                    if (idElement.ValueKind == JsonValueKind.String)
-                    {
-                        string idString = idElement.GetString();
-                        if (ulong.TryParse(idString, out ulong idValue))
-                        {
-                            response.id = idValue;
-                        }
-                        else
-                        {
-                            response.id = 0; // Default value if parsing fails
-                        }
-                    }
-                    else if (idElement.ValueKind == JsonValueKind.Number)
-                    {
-                        response.id = idElement.GetUInt64();
-                    }
-                    else
-                    {
-                        response.id = 0; // Default value for unknown types
-                    }
-                }
-                
-                if (jsonResponse.TryGetProperty("result", out var resultElement))
-                {
-                    response.type = "success";
-                    response.data = rawBinaryData; // Store original data for compatibility
-                    
-                    // Parse the result to determine response type
-                    if (resultElement.TryGetProperty("type", out var typeElement))
-                    {
-                        string resultType = typeElement.GetString();
-                        switch (resultType)
-                        {
-                            case "zome_response":
-                                response.HoloNETResponseType = HoloNETResponseType.ZomeResponse;
-                                break;
-                            case "signal":
-                                response.HoloNETResponseType = HoloNETResponseType.Signal;
-                                break;
-                            case "app_info":
-                                response.HoloNETResponseType = HoloNETResponseType.AppInfo;
-                                break;
-                            default:
-                                response.HoloNETResponseType = HoloNETResponseType.Error;
-                                break;
-                        }
-                    }
-                }
-                else if (jsonResponse.TryGetProperty("error", out var errorElement))
-                {
-                    response.type = "error";
-                    response.HoloNETResponseType = HoloNETResponseType.Error;
-                    response.data = rawBinaryData;
-                }
-
-                Logger.Log($"JSON-RPC 2.0 Decoded - ID: {response.id}, Type: {response.type}, ResponseType: {response.HoloNETResponseType}", LogType.Info);
-                return response;
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Error parsing JSON-RPC 2.0 response: {ex.Message}", LogType.Error);
-                // Fallback to legacy parsing if JSON parsing fails
-                return DecodeDataReceivedLegacy(rawBinaryData, dataReceivedEventArgs);
-            }
-        }
-
-        /// <summary>
-        /// Decodes data received using legacy MessagePack protocol (Redux/RSM)
-        /// </summary>
-        protected virtual IHoloNETResponse DecodeDataReceivedLegacy(byte[] rawBinaryData, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
-        {
-            IHoloNETResponse response = null;
-            HoloNETDataReceivedEventArgs holoNETDataReceivedEventArgs = new HoloNETDataReceivedEventArgs();
-
-            try
-            {
                 string id = "";
                 string rawBinaryDataAfterMessagePackDecodeAsString = "";
                 string rawBinaryDataAfterMessagePackDecodeDecoded = "";
 
                 byte[] data = rawBinaryData.ToArray();
                 rawBinaryData.CopyTo(data, 0);
+
 
                 response = MessagePackSerializer.Deserialize<HoloNETResponse>(data, messagePackSerializerOptions);
                 AppResponse appResponse = MessagePackSerializer.Deserialize<AppResponse>(response.data, messagePackSerializerOptions);
@@ -219,6 +102,8 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                 rawBinaryDataAfterMessagePackDecodeDecoded = DataHelper.DecodeBinaryDataAsUTF8(response.data);
 
                 Logger.Log($"Id: {response.id} Type: {response.type}: {response.type} Internal Type: {appResponse.type}", LogType.Info);
+                //Logger.Log(string.Concat("Raw Data Bytes Received After MessagePack Decode: ", rawBinaryDataAfterMessagePackDecodeAsString), LogType.Debug);
+                //Logger.Log(string.Concat("Raw Data Bytes Decoded After MessagePack Decode: ", rawBinaryDataAfterMessagePackDecodeDecoded), LogType.Debug);
 
                 switch (appResponse.type)
                 {

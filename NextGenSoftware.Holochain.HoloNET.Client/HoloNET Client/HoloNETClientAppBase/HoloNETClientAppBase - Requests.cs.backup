@@ -9,7 +9,6 @@ using Blake2Fast;
 using NextGenSoftware.Logging;
 using NextGenSoftware.Holochain.HoloNET.Client.Interfaces;
 using Sodium;
-using System.Text.Json;
 
 namespace NextGenSoftware.Holochain.HoloNET.Client
 {
@@ -555,7 +554,6 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         /// <param name="paramsObject">A basic CLR object containing the params the zome function is expecting (optional param).</param>
         /// <param name="matchIdToZomeFuncInCallback">This is an optional param, which defaults to true. Set this to true if you wish HoloNET to give the zome and zome function that made the call in the callback/event. If this is false then only the id will be given in the callback. This uses a small internal cache to match up the id to the given zome/function. Set this to false if you wish to save a tiny amount of memory by not utilizing this cache. If it is false then the `Zome` and `ZomeFunction` params will be missing in the ZomeCallBack, you will need to manually match the `id` to the call yourself. NOTE: If HoloNETDNA.EnforceRequestToResponseIdMatchingBehaviour is set to Warn or Error then this param will be ignored and the matching will always occur.</param>
         /// <param name="cachReturnData">This is an optional param, which defaults to false. Set this to true if you wish HoloNET to cache the response retrieved from holochain. Subsequent calls will return this cached data rather than calling the Holochain conductor again. Use this for static data that is not going to change for performance gains.</param>
-        /// <param name="entryDataObjectTypeReturnedFromZome">This is an optional param, where the caller can pass in the type of the dynamic data object they wish the entry data returned to be mapped to. This newly created data object will then be returned in the ZomeFunctionCallBackEventArgs.Entry.EntryDataObject property.</param>
         /// <param name="zomeResultCallBackMode">This is an optional param, where the caller can choose whether to wait for the Holochain Conductor response before returning to the caller or to return immediately once the request has been sent to the Holochain Conductor and then raise the OnDataReceived and then the OnZomeFunctionCallBack or OnSignalsCallBack events depending on the type of request sent to the Holochain Conductor.</param>
         /// <returns></returns>
         public async Task<ZomeFunctionCallBackEventArgs> CallZomeFunctionAsync(string id, string zome, string function, ZomeFunctionCallBack callback, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false, ConductorResponseCallBackMode zomeResultCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse)
@@ -640,27 +638,63 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
                 if (_signingCredentialsForCell.ContainsKey(cellId) && _signingCredentialsForCell[cellId] != null)
                 {
-                    // Check if we should use JSON-RPC 2.0 protocol (Holochain 0.5.2)
-                    if (HoloNETDNA?.HolochainVersion == HolochainVersion.Holochain_0_5_2)
+                    ZomeCallUnsigned payload = new ZomeCallUnsigned()
                     {
-                        await SendZomeCallHolochain052(id, zome, function, paramsObject, zomeResultCallBackMode);
-                    }
-                    else
+                        cap_secret = _signingCredentialsForCell[cellId].CapSecret,
+                        cell_id_agent_pub_key = ConvertHoloHashToBytes(HoloNETDNA.AgentPubKey),
+                        cell_id_dna_hash = ConvertHoloHashToBytes(HoloNETDNA.DnaHash),
+                        fn_name = function,
+                        zome_name = zome,
+                        payload = MessagePackSerializer.Serialize(paramsObject),
+                        provenance = _signingCredentialsForCell[cellId].SigningKey, 
+                        nonce = SodiumCore.GetRandomBytes(32), 
+                        //expires_at = DateTime.Now.AddMinutes(5).Ticks / 10
+                        expires_at = (DateTimeOffset.Now.ToUnixTimeMilliseconds() + 5 * 60 * 1000) * 1000
+                    };
+
+                    byte[] hash = new byte[32];
+                    try
                     {
-                        // Use legacy MessagePack protocol (Redux/RSM)
-                        await SendZomeCallLegacy(id, zome, function, paramsObject, zomeResultCallBackMode, cellId);
+                        // Call into the `holochain_zome_types` crate to get a blake2b hash of the zomeCall
+                        HolochainSerialisationWrapper.call_get_data_to_sign(hash, payload);
                     }
-                    
-                    // Return the result from the protocol-specific method
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Failed to get data to sign: " + e.ToString());
+                    }
+
+                    //byte[] hash = Blake2b.ComputeHash(MessagePackSerializer.Serialize(payload));
+                    var sig = Sodium.PublicKeyAuth.SignDetached(hash, _signingCredentialsForCell[cellId].KeyPair.PrivateKey);
+
+                    ZomeCallSigned signedPayload = new ZomeCallSigned()
+                    {
+                        cap_secret = payload.cap_secret,
+                        //cell_id = payload.cell_id,
+                        cell_id = [payload.cell_id_dna_hash, payload.cell_id_agent_pub_key],
+                        fn_name = payload.fn_name,
+                        zome_name = payload.zome_name,
+                        payload = payload.payload,
+                        provenance = payload.provenance,
+                        nonce = payload.nonce,
+                        expires_at = payload.expires_at,
+                        signature = sig[0..64]
+                    };
+
+                    HoloNETData holoNETData = new HoloNETData()
+                    {
+                        type = "call_zome",
+                        data = signedPayload
+                    };
+
+                    await SendHoloNETRequestAsync(holoNETData, HoloNETRequestType.ZomeCall, id);
+
                     if (zomeResultCallBackMode == ConductorResponseCallBackMode.WaitForHolochainConductorResponse)
                     {
                         Task<ZomeFunctionCallBackEventArgs> returnValue = _taskCompletionZomeCallBack[id].Task;
                         return await returnValue;
                     }
                     else
-                    {
                         return new ZomeFunctionCallBackEventArgs() { EndPoint = EndPoint, Id = id, Zome = zome, ZomeFunction = function, Message = "ZomeResultCallBackMode is set to UseCallBackEvents so please wait for OnZomeFunctionCallBack event for zome result." };
-                    }
                 }
                 else
                 {
@@ -673,109 +707,6 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
             {
                 HandleError("Error occurred in HoloNETClient.CallZomeFunctionAsync method.", ex);
                 return new ZomeFunctionCallBackEventArgs() { EndPoint = EndPoint, Id = id, Zome = zome, ZomeFunction = function, IsError = true, Message = $"Error occurred in HoloNETClient.CallZomeFunctionAsync method. Details: {ex}", Exception = ex };
-            }
-        }
-
-        /// <summary>
-        /// Sends a zome call using legacy MessagePack protocol (Redux/RSM)
-        /// </summary>
-        /// <summary>
-        /// Sends a zome call using JSON-RPC 2.0 protocol (Holochain 0.5.2)
-        /// </summary>
-        protected virtual async Task SendZomeCallHolochain052(string id, string zome, string function, object paramsObject, ConductorResponseCallBackMode zomeResultCallBackMode)
-        {
-            try
-            {
-                string cellId = $"{HoloNETDNA.AgentPubKey}_{HoloNETDNA.DnaHash}";
-                var request = new
-                {
-                    jsonrpc = "2.0",
-                    id = id,
-                    method = "call_zome",
-                    @params = new
-                    {
-                        zome_name = zome,
-                        fn_name = function,
-                        payload = paramsObject,
-                        cell_id = cellId
-                    }
-                };
-
-                string jsonRequest = System.Text.Json.JsonSerializer.Serialize(request);
-                await SendHoloNETRequestAsync(System.Text.Encoding.UTF8.GetBytes(jsonRequest), HoloNETRequestType.ZomeCall, id);
-            }
-            catch (Exception ex)
-            {
-                HandleError("Error occurred in HoloNETClient.SendZomeCallHolochain052 method.", ex);
-            }
-        }
-
-        protected virtual async Task SendZomeCallLegacy(string id, string zome, string function, object paramsObject, ConductorResponseCallBackMode zomeResultCallBackMode, string cellId)
-        {
-            try
-            {
-                ZomeCallUnsigned payload = new ZomeCallUnsigned()
-                {
-                    cap_secret = _signingCredentialsForCell[cellId].CapSecret,
-                    cell_id_agent_pub_key = ConvertHoloHashToBytes(HoloNETDNA.AgentPubKey),
-                    cell_id_dna_hash = ConvertHoloHashToBytes(HoloNETDNA.DnaHash),
-                    fn_name = function,
-                    zome_name = zome,
-                    payload = MessagePackSerializer.Serialize(paramsObject),
-                    provenance = _signingCredentialsForCell[cellId].SigningKey, 
-                    nonce = SodiumCore.GetRandomBytes(32), 
-                    expires_at = (DateTimeOffset.Now.ToUnixTimeMilliseconds() + 5 * 60 * 1000) * 1000
-                };
-
-                byte[] hash = new byte[32];
-                try
-                {
-                    // Call into the `holochain_zome_types` crate to get a blake2b hash of the zomeCall
-                    HolochainSerialisationWrapper.call_get_data_to_sign(hash, payload);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Failed to get data to sign: " + e.ToString());
-                }
-
-                var sig = Sodium.PublicKeyAuth.SignDetached(hash, _signingCredentialsForCell[cellId].KeyPair.PrivateKey);
-
-                ZomeCallSigned signedPayload = new ZomeCallSigned()
-                {
-                    cap_secret = payload.cap_secret,
-                    cell_id = [payload.cell_id_dna_hash, payload.cell_id_agent_pub_key],
-                    fn_name = payload.fn_name,
-                    zome_name = payload.zome_name,
-                    payload = payload.payload,
-                    provenance = payload.provenance,
-                    nonce = payload.nonce,
-                    expires_at = payload.expires_at,
-                    signature = sig[0..64]
-                };
-
-                HoloNETData holoNETData = new HoloNETData()
-                {
-                    type = "call_zome",
-                    data = signedPayload
-                };
-
-                await SendHoloNETRequestAsync(holoNETData, HoloNETRequestType.ZomeCall, id);
-
-                if (zomeResultCallBackMode == ConductorResponseCallBackMode.WaitForHolochainConductorResponse)
-                {
-                    Task<ZomeFunctionCallBackEventArgs> returnValue = _taskCompletionZomeCallBack[id].Task;
-                    await returnValue;
-                }
-                else
-                {
-                    // Return immediately for callback mode
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                HandleError("Error occurred in HoloNETClient.SendZomeCallLegacy method.", ex);
-                throw; // Re-throw to be handled by caller
             }
         }
 
@@ -913,7 +844,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         public ZomeFunctionCallBackEventArgs CallZomeFunction(string id, string zome, string function, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false, dynamic entryDataObjectReturnedFromZome = null)
         {
             _entryDataObjectLookup[id] = entryDataObjectReturnedFromZome;
-            return CallZomeFunctionAsync(_currentId.ToString(), zome, function, null, paramsObject, matchIdToZomeFuncInCallback, cachReturnData, entryDataObjectReturnedFromZome, ConductorResponseCallBackMode.UseCallBackEvents);
+            return CallZomeFunction(id, zome, function, null, paramsObject, matchIdToZomeFuncInCallback, cachReturnData, ConductorResponseCallBackMode.UseCallBackEvents);
         }
 
         /// <summary>
@@ -948,34 +879,68 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         /// <summary>
         /// This is the main method you will be using to invoke zome functions on your given zome. It has a number of handy overloads making it easier and more powerful to call your zome functions and manage the returned data. This method raises the OnDataReceived event and then either the OnZomeFunctionCallBack or OnSignalCallBack event once it has received a response from the Holochain conductor.     
         /// </summary>
+        /// <param name="zome">The name of the zome you wish to target.</param>
+        /// <param name="function">The name of the zome function you wish to call.</param>
+        /// <param name="callback">A delegate to call once the zome function returns. This delegate contains the same signature as the one used for the OnZomeFunctionCallBack event. (optional param).</param>
+        /// <param name="paramsObject">A basic CLR object containing the params the zome function is expecting (optional param).</param>
+        /// <param name="entryDataObjectReturnedFromZome">This is an optional param, where the caller can pass in an instance of the dynamic data object they wish the entry data returned to be mapped to. This data object will then be returned in the ZomeFunctionCallBackEventArgs.Entry.EntryDataObject property.</param>
+        /// <returns></returns>
+        public ZomeFunctionCallBackEventArgs CallZomeFunction(string zome, string function, ZomeFunctionCallBack callback, object paramsObject, dynamic entryDataObjectReturnedFromZome = null)
+        {
+            _currentId++;
+            return CallZomeFunctionAsync(_currentId.ToString(), zome, function, callback, paramsObject, true, false, entryDataObjectReturnedFromZome, ConductorResponseCallBackMode.UseCallBackEvents);
+        }
+
         /// <summary>
-        /// This is the main method you will be using to invoke zome functions on your given zome. It has a number of handy overloads making it easier and more powerful to call your zome functions and manage the returned data. This method raises the OnDataReceived event and then either the OnZomeFunctionCallBack or OnSignalCallBack event once it has received a response from the Holochain conductor.
+        /// This is the main method you will be using to invoke zome functions on your given zome. It has a number of handy overloads making it easier and more powerful to call your zome functions and manage the returned data. This method raises the OnDataReceived event and then either the OnZomeFunctionCallBack or OnSignalCallBack event once it has received a response from the Holochain conductor.       
         /// </summary>
         /// <param name="id">The unique id you wish to assign for this call. This id is then returned in OnDataReceived, OnZomeFunctionCallBack and OnSignalCallBack events. There are overloads that omit this param, use these overloads if you wish HoloNET to auto-generate and manage the id's for you.</param>
         /// <param name="zome">The name of the zome you wish to target.</param>
         /// <param name="function">The name of the zome function you wish to call.</param>
         /// <param name="callback">A delegate to call once the zome function returns. This delegate contains the same signature as the one used for the OnZomeFunctionCallBack event. (optional param).</param>
         /// <param name="paramsObject">A basic CLR object containing the params the zome function is expecting (optional param).</param>
-        /// <param name="matchIdToZomeFuncInCallback">This is an optional param, which defaults to true. Set this to true if you wish HoloNET to give the zome and zome function that made the call in the callback/event. If this is false then only the id will be given in the callback. This uses a small internal cache to match up the id to the given zome/function. Set this to false if you wish to save a tiny amount of memory by not utilizing this cache. If it is false then the  and  params will be missing in the ZomeCallBack, you will need to manually match the uid=501(maxgershfield) gid=20(staff) groups=20(staff),12(everyone),61(localaccounts),79(_appserverusr),80(admin),81(_appserveradm),98(_lpadmin),701(com.apple.sharepoint.group.1),702(com.apple.sharepoint.group.2),33(_appstore),100(_lpoperator),204(_developer),250(_analyticsusers),395(com.apple.access_ftp),398(com.apple.access_screensharing),399(com.apple.access_ssh),400(com.apple.access_remote_ae) to the call yourself. NOTE: If HoloNETDNA.EnforceRequestToResponseIdMatchingBehaviour is set to Warn or Error then this param will be ignored and the matching will always occur.</param>
+        /// <param name="matchIdToZomeFuncInCallback">This is an optional param, which defaults to true. Set this to true if you wish HoloNET to give the zome and zome function that made the call in the callback/event. If this is false then only the id will be given in the callback. This uses a small internal cache to match up the id to the given zome/function. Set this to false if you wish to save a tiny amount of memory by not utilizing this cache. If it is false then the `Zome` and `ZomeFunction` params will be missing in the ZomeCallBack, you will need to manually match the `id` to the call yourself. NOTE: If HoloNETDNA.EnforceRequestToResponseIdMatchingBehaviour is set to Warn or Error then this param will be ignored and the matching will always occur.</param>
+        /// <param name="cachReturnData">This is an optional param, which defaults to false. Set this to true if you wish HoloNET to cache the response retrieved from holochain. Subsequent calls will return this cached data rather than calling the Holochain conductor again. Use this for static data that is not going to change for performance gains.</param>
+        /// <param name="entryDataObjectReturnedFromZome">This is an optional param, where the caller can pass in an instance of the dynamic data object they wish the entry data returned to be mapped to. This data object will then be returned in the ZomeFunctionCallBackEventArgs.Entry.EntryDataObject property.</param>
+        /// <returns></returns>
+        public ZomeFunctionCallBackEventArgs CallZomeFunction(string id, string zome, string function, ZomeFunctionCallBack callback, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false, dynamic entryDataObjectReturnedFromZome = null)
+        {
+            _entryDataObjectLookup[id] = entryDataObjectReturnedFromZome;
+            return CallZomeFunctionAsync(id, zome, function, callback, paramsObject, matchIdToZomeFuncInCallback, cachReturnData, ConductorResponseCallBackMode.UseCallBackEvents).Result;
+        }
+
+        /// <summary>
+        /// This is the main method you will be using to invoke zome functions on your given zome. It has a number of handy overloads making it easier and more powerful to call your zome functions and manage the returned data. This method raises the OnDataReceived event and then either the OnZomeFunctionCallBack or OnSignalCallBack event once it has received a response from the Holochain conductor.       
+        /// </summary>
+        /// <param name="id">The unique id you wish to assign for this call. This id is then returned in OnDataReceived, OnZomeFunctionCallBack and OnSignalCallBack events. There are overloads that omit this param, use these overloads if you wish HoloNET to auto-generate and manage the id's for you.</param>
+        /// <param name="zome">The name of the zome you wish to target.</param>
+        /// <param name="function">The name of the zome function you wish to call.</param>
+        /// <param name="callback">A delegate to call once the zome function returns. This delegate contains the same signature as the one used for the OnZomeFunctionCallBack event. (optional param).</param>
+        /// <param name="paramsObject">A basic CLR object containing the params the zome function is expecting (optional param).</param>
+        /// <param name="matchIdToZomeFuncInCallback">This is an optional param, which defaults to true. Set this to true if you wish HoloNET to give the zome and zome function that made the call in the callback/event. If this is false then only the id will be given in the callback. This uses a small internal cache to match up the id to the given zome/function. Set this to false if you wish to save a tiny amount of memory by not utilizing this cache. If it is false then the `Zome` and `ZomeFunction` params will be missing in the ZomeCallBack, you will need to manually match the `id` to the call yourself. NOTE: If HoloNETDNA.EnforceRequestToResponseIdMatchingBehaviour is set to Warn or Error then this param will be ignored and the matching will always occur.</param>
+        /// <param name="cachReturnData">This is an optional param, which defaults to false. Set this to true if you wish HoloNET to cache the response retrieved from holochain. Subsequent calls will return this cached data rather than calling the Holochain conductor again. Use this for static data that is not going to change for performance gains.</param>
+        /// <param name="entryDataObjectTypeReturnedFromZome">This is an optional param, where the caller can pass in the type of the dynamic data object they wish the entry data returned to be mapped to. This newly created data object will then be returned in the ZomeFunctionCallBackEventArgs.Entry.EntryDataObject property.</param>
+        /// <returns></returns>
+        public ZomeFunctionCallBackEventArgs CallZomeFunction(string id, string zome, string function, ZomeFunctionCallBack callback, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false, Type entryDataObjectTypeReturnedFromZome = null)
+        {
+            _entryDataObjectTypeLookup[id] = entryDataObjectTypeReturnedFromZome;
+            return CallZomeFunction(id, zome, function, callback, paramsObject, matchIdToZomeFuncInCallback, cachReturnData, ConductorResponseCallBackMode.UseCallBackEvents);
+        }
+
+        /// <summary>
+        /// This is the main method you will be using to invoke zome functions on your given zome. It has a number of handy overloads making it easier and more powerful to call your zome functions and manage the returned data. This method raises the OnDataReceived event and then either the OnZomeFunctionCallBack or OnSignalCallBack event once it has received a response from the Holochain conductor.       
+        /// </summary>
+        /// <param name="id">The unique id you wish to assign for this call. This id is then returned in OnDataReceived, OnZomeFunctionCallBack and OnSignalCallBack events. There are overloads that omit this param, use these overloads if you wish HoloNET to auto-generate and manage the id's for you.</param>
+        /// <param name="zome">The name of the zome you wish to target.</param>
+        /// <param name="function">The name of the zome function you wish to call.</param>
+        /// <param name="callback">A delegate to call once the zome function returns. This delegate contains the same signature as the one used for the OnZomeFunctionCallBack event. (optional param).</param>
+        /// <param name="paramsObject">A basic CLR object containing the params the zome function is expecting (optional param).</param>
+        /// <param name="matchIdToZomeFuncInCallback">This is an optional param, which defaults to true. Set this to true if you wish HoloNET to give the zome and zome function that made the call in the callback/event. If this is false then only the id will be given in the callback. This uses a small internal cache to match up the id to the given zome/function. Set this to false if you wish to save a tiny amount of memory by not utilizing this cache. If it is false then the `Zome` and `ZomeFunction` params will be missing in the ZomeCallBack, you will need to manually match the `id` to the call yourself. NOTE: If HoloNETDNA.EnforceRequestToResponseIdMatchingBehaviour is set to Warn or Error then this param will be ignored and the matching will always occur.</param>
         /// <param name="cachReturnData">This is an optional param, which defaults to false. Set this to true if you wish HoloNET to cache the response retrieved from holochain. Subsequent calls will return this cached data rather than calling the Holochain conductor again. Use this for static data that is not going to change for performance gains.</param>
         /// <returns></returns>
         public ZomeFunctionCallBackEventArgs CallZomeFunction(string id, string zome, string function, ZomeFunctionCallBack callback, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false)
         {
-            return CallZomeFunctionAsync(id, zome, function, callback, paramsObject, matchIdToZomeFuncInCallback, cachReturnData, ConductorResponseCallBackMode.WaitForHolochainConductorResponse).Result;
-        }
-        public ZomeFunctionCallBackEventArgs CallZomeFunction(string zome, string function, ZomeFunctionCallBack callback, object paramsObject, dynamic entryDataObjectReturnedFromZome = null)
-        {
-            return CallZomeFunctionAsync(_currentId.ToString(), zome, function, callback, paramsObject, true, false, entryDataObjectReturnedFromZome, ConductorResponseCallBackMode.WaitForHolochainConductorResponse).Result;
-        }
-
-        public ZomeFunctionCallBackEventArgs CallZomeFunction(string id, string zome, string function, ZomeFunctionCallBack callback, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false, dynamic entryDataObjectReturnedFromZome = null)
-        {
-            return CallZomeFunctionAsync(id, zome, function, callback, paramsObject, matchIdToZomeFuncInCallback, cachReturnData, entryDataObjectReturnedFromZome, ConductorResponseCallBackMode.WaitForHolochainConductorResponse).Result;
-        }
-
-        public ZomeFunctionCallBackEventArgs CallZomeFunction(string id, string zome, string function, ZomeFunctionCallBack callback, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false, Type entryDataObjectTypeReturnedFromZome = null)
-        {
-            return CallZomeFunctionAsync(id, zome, function, callback, paramsObject, matchIdToZomeFuncInCallback, cachReturnData, entryDataObjectTypeReturnedFromZome, ConductorResponseCallBackMode.WaitForHolochainConductorResponse).Result;
+            return CallZomeFunctionAsync(id, zome, function, callback, paramsObject, matchIdToZomeFuncInCallback, cachReturnData, ConductorResponseCallBackMode.UseCallBackEvents).Result;
         }
     }
 }

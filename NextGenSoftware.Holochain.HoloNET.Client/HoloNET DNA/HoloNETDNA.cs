@@ -270,6 +270,10 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
         //TODO: Possibly add these as defaults (used for the Connect methods).
         //retrieveAgentPubKeyAndDnaHashMode
+        /// <summary>
+        /// The version of Holochain to use. This determines the protocol and API version for communication with the Holochain conductor.
+        /// </summary>
+        public HolochainVersion HolochainVersion { get; set; } = HolochainVersion.Holochain_0_5_2;
         //retrieveAgentPubKeyAndDnaHashFromConductor
         //retrieveAgentPubKeyAndDnaHashFromSandbox
         //automaticallyAttemptToRetrieveFromConductorIfSandBoxFails
