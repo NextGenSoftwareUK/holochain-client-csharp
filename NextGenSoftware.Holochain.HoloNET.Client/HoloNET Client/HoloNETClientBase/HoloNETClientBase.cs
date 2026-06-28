@@ -347,7 +347,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                     if (connectedCallBackMode == ConnectedCallBackMode.WaitForHolochainConductorToConnect)
                     {
                         _connectingAsync = true;
-                        await WebSocket.ConnectAsync(new Uri(holochainConductorURI));
+                        await WebSocket.ConnectAsync(new Uri(holochainConductorURI), BuildWebSocketHandshakeHeaders());
 
                         if (State == WebSocketState.Open)
                         {
@@ -357,7 +357,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                     else
                     {
                         _connectingAsync = false;
-                        WebSocket.ConnectAsync(new Uri(holochainConductorURI));
+                        WebSocket.ConnectAsync(new Uri(holochainConductorURI), BuildWebSocketHandshakeHeaders());
 
                         result.Message = "connectedCallBackMode is set to UseCallBackEvents so please wait for the OnConnected event for the result.";
                         result.IsWarning = true;
@@ -608,17 +608,16 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                     }
                     else
                     {
-                        //If the conductor config file does not exist in the default location then we need to set the conductor up now
+                        //If the conductor config file does not exist in the default location then we need to set the conductor up now.
+                        //NOTE: As of Holochain 0.6.x the old `-i` (interactive init) flag has been removed entirely - it no longer exists on
+                        //the holochain.exe CLI (confirmed via `holochain.exe --help` against the real 0.6.1 binary, which only lists
+                        //--create-config, not -i). The replacement is `--create-config`, which also no longer accepts a `-c <path>` to
+                        //control where it writes the file - it always creates a new randomly-named sandbox directory (and a `.hc` file in
+                        //the current working directory pointing at it) and prints a "Created config at <path>" line to stdout. There are
+                        //also no interactive passphrase prompts to pipe answers into anymore because the config it generates defaults to
+                        //the LairServerInProc keystore, which does not require a passphrase for an unencrypted local sandbox/dev setup.
                         if (!File.Exists(HoloNETDNA.HolochainConductorConfigPath))
-                        {
-                            _conductorProcess.StartInfo.Arguments = $"-NoExit -Command \"'y' | {fullPathToHolochainExe} --piped -i\"";
-                            _conductorProcess.Start();
-                            _conductorProcessSessionId = _conductorProcess.Id;
-
-                            await Task.Delay(3000);
-                            await ShutDownAllHolochainConductorsAsync();
-                            _conductorProcess.Close();
-                        }
+                            await CreateHolochainConductorConfigAsync(fullPathToHolochainExe);
 
                         //Once the config file has been created we can update it with the correct port and then launch it.
                         if (File.Exists(HoloNETDNA.HolochainConductorConfigPath))
@@ -626,7 +625,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                             UpdateHolochainConductorConfigFile();
 
                             //TrueProcessStart("PowerShell.exe -NoExit -Command \"'' | {fullPathToHolochainExe} --piped\"");
-                            _conductorProcess.StartInfo.Arguments = $"-NoExit -Command \"'' | {fullPathToHolochainExe} --piped\"";
+                            _conductorProcess.StartInfo.Arguments = $"-NoExit -Command \"'' | {fullPathToHolochainExe} --piped -c '{HoloNETDNA.HolochainConductorConfigPath}'\"";
                         }
                     }
 
@@ -1087,6 +1086,84 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         {
             IsConnecting = false;
             HandleError(e.Reason, e.ErrorDetails);
+        }
+
+        /// <summary>
+        /// Builds the extra headers to send on the WebSocket handshake to the Holochain Conductor. As of Holochain
+        /// 0.6.x the conductor's admin/app websocket servers reject the handshake with HTTP 400 if no Origin header
+        /// is present at all, even when their `allowed_origins` config is set to allow any origin - confirmed directly
+        /// against a real Holochain 0.6.1 conductor, since .NET's ClientWebSocket does not send an Origin header by
+        /// default (Origin is normally a browser-only concept). We send a generic localhost Origin here since the
+        /// conductor's `allowed_origins: Any` setting means the actual value does not need to match anything specific.
+        /// </summary>
+        protected virtual Dictionary<string, string> BuildWebSocketHandshakeHeaders()
+        {
+            return new Dictionary<string, string>
+            {
+                { "Origin", "http://localhost" }
+            };
+        }
+
+        /// <summary>
+        /// Runs `holochain.exe --create-config` to generate a fresh conductor config (this replaces the old, now-removed
+        /// `-i` interactive-init flag - see the comment in StartHolochainConductorAsync for details) and copies the
+        /// generated file to HoloNETDNA.HolochainConductorConfigPath so subsequent runs can find it at the expected
+        /// location. `--create-config` always writes into a new randomly-named sandbox directory under the working
+        /// directory it is run from and prints a "Created config at &lt;path&gt;" line to stdout - there is no flag to
+        /// control the output path directly, so we parse that line to find where it actually wrote the file.
+        /// </summary>
+        protected virtual async Task CreateHolochainConductorConfigAsync(string fullPathToHolochainExe)
+        {
+            string sandboxWorkingDirectory = Path.Combine(Path.GetTempPath(), $"HoloNET_{Guid.NewGuid():N}");
+            Directory.CreateDirectory(sandboxWorkingDirectory);
+
+            using (Process createConfigProcess = new Process())
+            {
+                createConfigProcess.StartInfo.FileName = fullPathToHolochainExe;
+                createConfigProcess.StartInfo.Arguments = "--create-config";
+                createConfigProcess.StartInfo.WorkingDirectory = sandboxWorkingDirectory;
+                createConfigProcess.StartInfo.UseShellExecute = false;
+                createConfigProcess.StartInfo.RedirectStandardOutput = true;
+                createConfigProcess.StartInfo.RedirectStandardError = true;
+                createConfigProcess.StartInfo.CreateNoWindow = true;
+
+                string stdOut = "";
+                string stdErr = "";
+                createConfigProcess.Start();
+                stdOut = await createConfigProcess.StandardOutput.ReadToEndAsync();
+                stdErr = await createConfigProcess.StandardError.ReadToEndAsync();
+                createConfigProcess.WaitForExit(10000);
+
+                //Checking both streams since this is undocumented CLI behaviour - verified empirically against the real
+                //0.6.1 binary that the "Created config at <path>" line currently goes to stdout, but checking stderr
+                //too is a cheap safeguard against that changing in a future point release.
+                string combinedOutput = string.Concat(stdOut, "\n", stdErr);
+                const string marker = "Created config at ";
+                int markerIndex = combinedOutput.IndexOf(marker);
+
+                if (markerIndex == -1)
+                {
+                    HandleError($"Error in HoloNETClient.CreateHolochainConductorConfigAsync method. Could not find the '{marker}' line in the output of 'holochain.exe --create-config'. Output was: {combinedOutput}", null);
+                    return;
+                }
+
+                int pathStart = markerIndex + marker.Length;
+                int pathEnd = combinedOutput.IndexOf("\n", pathStart);
+                string generatedConfigPath = combinedOutput.Substring(pathStart, (pathEnd == -1 ? combinedOutput.Length : pathEnd) - pathStart).Trim();
+
+                if (!File.Exists(generatedConfigPath))
+                {
+                    HandleError($"Error in HoloNETClient.CreateHolochainConductorConfigAsync method. The generated config file could not be found at the path parsed from the output: {generatedConfigPath}", null);
+                    return;
+                }
+
+                string targetDirectory = Path.GetDirectoryName(HoloNETDNA.HolochainConductorConfigPath);
+
+                if (!string.IsNullOrEmpty(targetDirectory) && !Directory.Exists(targetDirectory))
+                    Directory.CreateDirectory(targetDirectory);
+
+                File.Copy(generatedConfigPath, HoloNETDNA.HolochainConductorConfigPath, true);
+            }
         }
 
         protected virtual void UpdateHolochainConductorConfigFile()
