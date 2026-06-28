@@ -29,6 +29,17 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         private Dictionary<string, PropertyInfo[]> _dictPropertyInfos = new Dictionary<string, PropertyInfo[]>();
         private TaskCompletionSource<ReadyForZomeCallsEventArgs> _taskCompletionReadyForZomeCalls = new TaskCompletionSource<ReadyForZomeCallsEventArgs>();
 
+        // New in Holochain 0.6.1 - App API.
+        private Dictionary<string, TaskCompletionSource<CloneCellCreatedCallBackEventArgs>> _taskCompletionCloneCellCreatedCallBack = new Dictionary<string, TaskCompletionSource<CloneCellCreatedCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<CloneCellEnabledCallBackEventArgs>> _taskCompletionCloneCellEnabledCallBack = new Dictionary<string, TaskCompletionSource<CloneCellEnabledCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<CloneCellDisabledCallBackEventArgs>> _taskCompletionCloneCellDisabledCallBack = new Dictionary<string, TaskCompletionSource<CloneCellDisabledCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<CountersigningSessionStateReturnedCallBackEventArgs>> _taskCompletionCountersigningSessionStateReturnedCallBack = new Dictionary<string, TaskCompletionSource<CountersigningSessionStateReturnedCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<CountersigningSessionAbandonedCallBackEventArgs>> _taskCompletionCountersigningSessionAbandonedCallBack = new Dictionary<string, TaskCompletionSource<CountersigningSessionAbandonedCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<PublishCountersigningSessionTriggeredCallBackEventArgs>> _taskCompletionPublishCountersigningSessionTriggeredCallBack = new Dictionary<string, TaskCompletionSource<PublishCountersigningSessionTriggeredCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<WasmHostFunctionsListedCallBackEventArgs>> _taskCompletionWasmHostFunctionsListedCallBack = new Dictionary<string, TaskCompletionSource<WasmHostFunctionsListedCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<MemproofsProvidedCallBackEventArgs>> _taskCompletionMemproofsProvidedCallBack = new Dictionary<string, TaskCompletionSource<MemproofsProvidedCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<AppPeerMetaInfoReturnedCallBackEventArgs>> _taskCompletionAppPeerMetaInfoReturnedCallBack = new Dictionary<string, TaskCompletionSource<AppPeerMetaInfoReturnedCallBackEventArgs>>();
+
         public AppInfo CachedAppInfo { get; set; }
 
         //Events
@@ -64,6 +75,81 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         /// Fired when the client has successfully connected and reteived the AgentPubKey & DnaHash, meaning it is ready to make zome calls to the Holochain conductor.
         /// </summary>
         public event ReadyForZomeCalls OnReadyForZomeCalls;
+
+
+        // New in Holochain 0.6.1 - App API.
+
+        public delegate void CloneCellCreatedCallBack(object sender, CloneCellCreatedCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the CreateCloneCellAsync/CreateCloneCell method is called.
+        /// </summary>
+        public event CloneCellCreatedCallBack OnCloneCellCreatedCallBack;
+
+
+        public delegate void CloneCellEnabledCallBack(object sender, CloneCellEnabledCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the EnableCloneCellAsync/EnableCloneCell method is called.
+        /// </summary>
+        public event CloneCellEnabledCallBack OnCloneCellEnabledCallBack;
+
+
+        public delegate void CloneCellDisabledCallBack(object sender, CloneCellDisabledCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the DisableCloneCellAsync/DisableCloneCell method is called.
+        /// </summary>
+        public event CloneCellDisabledCallBack OnCloneCellDisabledCallBack;
+
+
+        public delegate void CountersigningSessionStateReturnedCallBack(object sender, CountersigningSessionStateReturnedCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the GetCountersigningSessionStateAsync/GetCountersigningSessionState method is called.
+        /// </summary>
+        public event CountersigningSessionStateReturnedCallBack OnCountersigningSessionStateReturnedCallBack;
+
+
+        public delegate void CountersigningSessionAbandonedCallBack(object sender, CountersigningSessionAbandonedCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the AbandonCountersigningSessionAsync/AbandonCountersigningSession method is called.
+        /// </summary>
+        public event CountersigningSessionAbandonedCallBack OnCountersigningSessionAbandonedCallBack;
+
+
+        public delegate void PublishCountersigningSessionTriggeredCallBack(object sender, PublishCountersigningSessionTriggeredCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the PublishCountersigningSessionAsync/PublishCountersigningSession method is called.
+        /// </summary>
+        public event PublishCountersigningSessionTriggeredCallBack OnPublishCountersigningSessionTriggeredCallBack;
+
+
+        public delegate void WasmHostFunctionsListedCallBack(object sender, WasmHostFunctionsListedCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the ListWasmHostFunctionsAsync/ListWasmHostFunctions method is called.
+        /// </summary>
+        public event WasmHostFunctionsListedCallBack OnWasmHostFunctionsListedCallBack;
+
+
+        public delegate void MemproofsProvidedCallBack(object sender, MemproofsProvidedCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the ProvideMemproofsAsync/ProvideMemproofs method is called.
+        /// </summary>
+        public event MemproofsProvidedCallBack OnMemproofsProvidedCallBack;
+
+
+        public delegate void AppPeerMetaInfoReturnedCallBack(object sender, AppPeerMetaInfoReturnedCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the GetAppPeerMetaInfoAsync/GetAppPeerMetaInfo method is called.
+        /// </summary>
+        public event AppPeerMetaInfoReturnedCallBack OnAppPeerMetaInfoReturnedCallBack;
+
 
         // Properties
 

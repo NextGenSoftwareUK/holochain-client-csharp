@@ -35,6 +35,27 @@ namespace NextGenSoftware.Holochain.HoloNET.Client.Interfaces
         event HoloNETClientAdmin.StorageInfoReturnedCallBack OnStorageInfoReturnedCallBack;
         event HoloNETClientAdmin.ZomeCallCapabilityGrantedCallBack OnZomeCallCapabilityGrantedCallBack;
 
+        // New in Holochain 0.6.1 - Admin API.
+        event HoloNETClientAdmin.ZomeCallCapabilityRevokedCallBack OnZomeCallCapabilityRevokedCallBack;
+        event HoloNETClientAdmin.CapabilityGrantsListedCallBack OnCapabilityGrantsListedCallBack;
+        event HoloNETClientAdmin.PeerMetaInfoReturnedCallBack OnPeerMetaInfoReturnedCallBack;
+        event HoloNETClientAdmin.AppAuthenticationTokenIssuedCallBack OnAppAuthenticationTokenIssuedCallBack;
+        event HoloNETClientAdmin.AppAuthenticationTokenRevokedCallBack OnAppAuthenticationTokenRevokedCallBack;
+        event HoloNETClientAdmin.CompatibleCellsReturnedCallBack OnCompatibleCellsReturnedCallBack;
+
+        ZomeCallCapabilityRevokedCallBackEventArgs RevokeZomeCallCapability(byte[] actionHash, CellId cellId, string id = null);
+        Task<ZomeCallCapabilityRevokedCallBackEventArgs> RevokeZomeCallCapabilityAsync(byte[] actionHash, CellId cellId, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+        CapabilityGrantsListedCallBackEventArgs ListCapabilityGrants(string installedAppId, bool includeRevoked = false, string id = null);
+        Task<CapabilityGrantsListedCallBackEventArgs> ListCapabilityGrantsAsync(string installedAppId, bool includeRevoked = false, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+        PeerMetaInfoReturnedCallBackEventArgs GetPeerMetaInfo(string url, List<byte[]> dnaHashes = null, string id = null);
+        Task<PeerMetaInfoReturnedCallBackEventArgs> GetPeerMetaInfoAsync(string url, List<byte[]> dnaHashes = null, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+        AppAuthenticationTokenIssuedCallBackEventArgs IssueAppAuthenticationToken(string installedAppId, ulong expirySeconds = 0, bool singleUse = false, string id = null);
+        Task<AppAuthenticationTokenIssuedCallBackEventArgs> IssueAppAuthenticationTokenAsync(string installedAppId, ulong expirySeconds = 0, bool singleUse = false, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+        AppAuthenticationTokenRevokedCallBackEventArgs RevokeAppAuthenticationToken(byte[] token, string id = null);
+        Task<AppAuthenticationTokenRevokedCallBackEventArgs> RevokeAppAuthenticationTokenAsync(byte[] token, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+        CompatibleCellsReturnedCallBackEventArgs GetCompatibleCells(byte[] dnaHash, string id = null);
+        Task<CompatibleCellsReturnedCallBackEventArgs> GetCompatibleCellsAsync(byte[] dnaHash, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+
         AgentInfoAddedCallBackEventArgs AddAgentInfo(AgentInfo[] agentInfos, string id = null);
         Task<AgentInfoAddedCallBackEventArgs> AddAgentInfoAsync(AgentInfo[] agentInfos, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
         AppInterfaceAttachedCallBackEventArgs AttachAppInterface(ushort? port = null, string id = null);

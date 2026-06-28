@@ -1,24 +1,24 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness.csproj": {}
+    "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness.csproj": {}
   },
   "projects": {
-    "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness.csproj": {
+    "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness.csproj": {
       "version": "3.0.4",
       "restore": {
-        "projectUniqueName": "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness.csproj",
+        "projectUniqueName": "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness.csproj",
         "projectName": "NextGenSoftware.Holochain.HoloNET.Client.TestHarness",
-        "projectPath": "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness.csproj",
-        "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness\\obj\\",
+        "projectPath": "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness.csproj",
+        "packagesPath": "C:\\Users\\David\\.nuget\\packages\\",
+        "outputPath": "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client.TestHarness\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NuGet.Config",
-          "C:\\Users\\USER\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Source\\holochain-client-csharp\\NuGet.Config",
+          "C:\\Users\\David\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -33,13 +33,14 @@
         },
         "frameworks": {
           "net8.0": {
+            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj": {
-                "projectPath": "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj"
+              "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj": {
+                "projectPath": "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj"
               },
-              "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.ORM\\NextGenSoftware.Holochain.HoloNET.ORM.csproj": {
-                "projectPath": "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.ORM\\NextGenSoftware.Holochain.HoloNET.ORM.csproj"
+              "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.ORM\\NextGenSoftware.Holochain.HoloNET.ORM.csproj": {
+                "projectPath": "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.ORM\\NextGenSoftware.Holochain.HoloNET.ORM.csproj"
               }
             }
           }
@@ -48,10 +49,17 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "imports": [
             "net461",
@@ -69,25 +77,25 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.108/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj": {
+    "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj": {
       "version": "3.0.5",
       "restore": {
-        "projectUniqueName": "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj",
+        "projectUniqueName": "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj",
         "projectName": "NextGenSoftware.Holochain.HoloNET.Client",
-        "projectPath": "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj",
-        "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\obj\\",
+        "projectPath": "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj",
+        "packagesPath": "C:\\Users\\David\\.nuget\\packages\\",
+        "outputPath": "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NuGet.Config",
-          "C:\\Users\\USER\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Source\\holochain-client-csharp\\NuGet.Config",
+          "C:\\Users\\David\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -102,16 +110,17 @@
         },
         "frameworks": {
           "net8.0": {
+            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj": {
-                "projectPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj"
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj"
               },
-              "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj": {
-                "projectPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj"
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj"
               },
-              "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.WebSocket\\NextGenSoftware.WebSocket.csproj": {
-                "projectPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.WebSocket\\NextGenSoftware.WebSocket.csproj"
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.WebSocket\\NextGenSoftware.WebSocket.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.WebSocket\\NextGenSoftware.WebSocket.csproj"
               }
             }
           }
@@ -120,15 +129,22 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "dependencies": {
             "MessagePack": {
               "target": "Package",
-              "version": "[2.4.59, )"
+              "version": "[2.5.302, )"
             },
             "Newtonsoft.Json": {
               "target": "Package",
@@ -171,25 +187,25 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.108/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.ORM\\NextGenSoftware.Holochain.HoloNET.ORM.csproj": {
+    "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.ORM\\NextGenSoftware.Holochain.HoloNET.ORM.csproj": {
       "version": "3.0.6",
       "restore": {
-        "projectUniqueName": "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.ORM\\NextGenSoftware.Holochain.HoloNET.ORM.csproj",
+        "projectUniqueName": "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.ORM\\NextGenSoftware.Holochain.HoloNET.ORM.csproj",
         "projectName": "NextGenSoftware.Holochain.HoloNET.ORM",
-        "projectPath": "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.ORM\\NextGenSoftware.Holochain.HoloNET.ORM.csproj",
-        "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.ORM\\obj\\",
+        "projectPath": "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.ORM\\NextGenSoftware.Holochain.HoloNET.ORM.csproj",
+        "packagesPath": "C:\\Users\\David\\.nuget\\packages\\",
+        "outputPath": "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.ORM\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NuGet.Config",
-          "C:\\Users\\USER\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Source\\holochain-client-csharp\\NuGet.Config",
+          "C:\\Users\\David\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -204,10 +220,20 @@
         },
         "frameworks": {
           "net8.0": {
+            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj": {
-                "projectPath": "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj"
+              "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj": {
+                "projectPath": "C:\\Source\\holochain-client-csharp\\NextGenSoftware.Holochain.HoloNET.Client\\NextGenSoftware.Holochain.HoloNET.Client.csproj"
+              },
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj"
+              },
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj"
+              },
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.WebSocket\\NextGenSoftware.WebSocket.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.WebSocket\\NextGenSoftware.WebSocket.csproj"
               }
             }
           }
@@ -216,10 +242,17 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "imports": [
             "net461",
@@ -237,25 +270,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.108/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.CLI.Engine\\NextGenSoftware.CLI.Engine.csproj": {
+    "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.CLI.Engine\\NextGenSoftware.CLI.Engine.csproj": {
       "version": "1.3.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.CLI.Engine\\NextGenSoftware.CLI.Engine.csproj",
+        "projectUniqueName": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.CLI.Engine\\NextGenSoftware.CLI.Engine.csproj",
         "projectName": "NextGenSoftware.CLI.Engine",
-        "projectPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.CLI.Engine\\NextGenSoftware.CLI.Engine.csproj",
-        "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.CLI.Engine\\obj\\",
+        "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.CLI.Engine\\NextGenSoftware.CLI.Engine.csproj",
+        "packagesPath": "C:\\Users\\David\\.nuget\\packages\\",
+        "outputPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.CLI.Engine\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NuGet.Config",
-          "C:\\Users\\USER\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\David\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -265,18 +297,18 @@
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "C:\\Program Files\\dotnet\\library-packs": {},
-          "https://api.nuget.org/v3/index.json": {},
-          "https://www.myget.org/F/opensilver/api/v3/index.json": {}
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
+            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj": {
-                "projectPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj"
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj"
               },
-              "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj": {
-                "projectPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj"
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj"
               }
             }
           }
@@ -285,15 +317,46 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "dependencies": {
+            "BetterConsoleTables": {
+              "target": "Package",
+              "version": "[1.1.3, )"
+            },
             "Colorful.Console": {
               "target": "Package",
               "version": "[1.2.15, )"
+            },
+            "ConsoleTables": {
+              "target": "Package",
+              "version": "[2.6.2, )"
+            },
+            "ShellProgressBar": {
+              "target": "Package",
+              "version": "[5.2.0, )"
+            },
+            "System.Collections": {
+              "target": "Package",
+              "version": "[4.3.0, )"
+            },
+            "System.Diagnostics.Debug": {
+              "target": "Package",
+              "version": "[4.3.0, )"
+            },
+            "System.Runtime.Extensions": {
+              "target": "Package",
+              "version": "[4.3.0, )"
             }
           },
           "imports": [
@@ -312,40 +375,46 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.108/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj": {
+    "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj",
+        "projectUniqueName": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj",
         "projectName": "NextGenSoftware.ErrorHandling",
-        "projectPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj",
-        "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.ErrorHandling\\obj\\",
+        "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj",
+        "packagesPath": "C:\\Users\\David\\.nuget\\packages\\",
+        "outputPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.ErrorHandling\\obj\\",
         "projectStyle": "PackageReference",
+        "crossTargeting": true,
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NuGet.Config",
-          "C:\\Users\\USER\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\David\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
-          "net8.0"
+          "net8.0",
+          "net9.0"
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "C:\\Program Files\\dotnet\\library-packs": {},
-          "https://api.nuget.org/v3/index.json": {},
-          "https://www.myget.org/F/opensilver/api/v3/index.json": {}
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
+            "framework": "net8.0",
             "targetAlias": "net8.0",
+            "projectReferences": {}
+          },
+          "net9.0": {
+            "framework": "net9.0",
+            "targetAlias": "net9.0",
             "projectReferences": {}
           }
         },
@@ -353,10 +422,17 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "imports": [
             "net461",
@@ -374,43 +450,74 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.108/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
+        },
+        "net9.0": {
+          "framework": "net9.0",
+          "targetAlias": "net9.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj": {
+    "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj": {
       "version": "2.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj",
+        "projectUniqueName": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj",
         "projectName": "NextGenSoftware.Logging",
-        "projectPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj",
-        "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Logging\\obj\\",
+        "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj",
+        "packagesPath": "C:\\Users\\David\\.nuget\\packages\\",
+        "outputPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Logging\\obj\\",
         "projectStyle": "PackageReference",
+        "crossTargeting": true,
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NuGet.Config",
-          "C:\\Users\\USER\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\David\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
-          "net8.0"
+          "net8.0",
+          "net9.0"
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "C:\\Program Files\\dotnet\\library-packs": {},
-          "https://api.nuget.org/v3/index.json": {},
-          "https://www.myget.org/F/opensilver/api/v3/index.json": {}
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
+            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.CLI.Engine\\NextGenSoftware.CLI.Engine.csproj": {
-                "projectPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.CLI.Engine\\NextGenSoftware.CLI.Engine.csproj"
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.CLI.Engine\\NextGenSoftware.CLI.Engine.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.CLI.Engine\\NextGenSoftware.CLI.Engine.csproj"
+              }
+            }
+          },
+          "net9.0": {
+            "framework": "net9.0",
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.CLI.Engine\\NextGenSoftware.CLI.Engine.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.CLI.Engine\\NextGenSoftware.CLI.Engine.csproj"
               }
             }
           }
@@ -419,10 +526,17 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "imports": [
             "net461",
@@ -440,25 +554,45 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.108/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
+        },
+        "net9.0": {
+          "framework": "net9.0",
+          "targetAlias": "net9.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj": {
+    "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj": {
       "version": "1.2.1",
       "restore": {
-        "projectUniqueName": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj",
+        "projectUniqueName": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj",
         "projectName": "NextGenSoftware.Utilities",
-        "projectPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj",
-        "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Utilities\\obj\\",
+        "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Utilities\\NextGenSoftware.Utilities.csproj",
+        "packagesPath": "C:\\Users\\David\\.nuget\\packages\\",
+        "outputPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Utilities\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NuGet.Config",
-          "C:\\Users\\USER\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\David\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -468,11 +602,11 @@
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "C:\\Program Files\\dotnet\\library-packs": {},
-          "https://api.nuget.org/v3/index.json": {},
-          "https://www.myget.org/F/opensilver/api/v3/index.json": {}
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
+            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {}
           }
@@ -481,11 +615,32 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
+          "dependencies": {
+            "NBitcoin": {
+              "target": "Package",
+              "version": "[9.0.3, )"
+            },
+            "Portable.BouncyCastle": {
+              "target": "Package",
+              "version": "[1.9.0, )"
+            },
+            "SshNet.Security.Cryptography": {
+              "target": "Package",
+              "version": "[1.3.0, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
@@ -502,46 +657,59 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.108/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.WebSocket\\NextGenSoftware.WebSocket.csproj": {
+    "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.WebSocket\\NextGenSoftware.WebSocket.csproj": {
       "version": "2.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.WebSocket\\NextGenSoftware.WebSocket.csproj",
+        "projectUniqueName": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.WebSocket\\NextGenSoftware.WebSocket.csproj",
         "projectName": "NextGenSoftware.WebSocket",
-        "projectPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.WebSocket\\NextGenSoftware.WebSocket.csproj",
-        "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.WebSocket\\obj\\",
+        "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.WebSocket\\NextGenSoftware.WebSocket.csproj",
+        "packagesPath": "C:\\Users\\David\\.nuget\\packages\\",
+        "outputPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.WebSocket\\obj\\",
         "projectStyle": "PackageReference",
+        "crossTargeting": true,
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\USER\\source\\repos\\holochain-client-csharp\\NuGet.Config",
-          "C:\\Users\\USER\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\David\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
-          "net8.0"
+          "net8.0",
+          "net9.0"
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "C:\\Program Files\\dotnet\\library-packs": {},
-          "https://api.nuget.org/v3/index.json": {},
-          "https://www.myget.org/F/opensilver/api/v3/index.json": {}
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
+            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj": {
-                "projectPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj"
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj"
               },
-              "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj": {
-                "projectPath": "C:\\Users\\USER\\source\\repos\\NextGenSoftware-Libraries\\NextGenSoftware Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj"
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj"
+              }
+            }
+          },
+          "net9.0": {
+            "framework": "net9.0",
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.ErrorHandling\\NextGenSoftware.ErrorHandling.csproj"
+              },
+              "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj": {
+                "projectPath": "C:\\Source\\NextGenSoftware-Libraries\\NextGenSoftware.Logging\\NextGenSoftware.Logging.csproj"
               }
             }
           }
@@ -550,10 +718,17 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "imports": [
             "net461",
@@ -571,7 +746,28 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.108/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
+        },
+        "net9.0": {
+          "framework": "net9.0",
+          "targetAlias": "net9.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

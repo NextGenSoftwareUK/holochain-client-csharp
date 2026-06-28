@@ -215,6 +215,77 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                         response.HoloNETResponseType = HoloNETResponseType.AdminAdminInterfacesAdded;
                         break;
 
+                    // New in Holochain 0.6.1 - Admin API.
+
+                    case "zome_call_capability_revoked":
+                        response.HoloNETResponseType = HoloNETResponseType.AdminZomeCallCapabilityRevoked;
+                        break;
+
+                    case "capability_grants_info":
+                        response.HoloNETResponseType = HoloNETResponseType.AdminCapabilityGrantsInfoReturned;
+                        break;
+
+                    case "app_authentication_token_issued":
+                        response.HoloNETResponseType = HoloNETResponseType.AdminAppAuthenticationTokenIssued;
+                        break;
+
+                    case "app_authentication_token_revoked":
+                        response.HoloNETResponseType = HoloNETResponseType.AdminAppAuthenticationTokenRevoked;
+                        break;
+
+                    case "compatible_cells":
+                        response.HoloNETResponseType = HoloNETResponseType.AdminCompatibleCellsReturned;
+                        break;
+
+                    // peer_meta_info is shared between Admin and App interfaces - this client class
+                    // (HoloNETClientBase) is shared by both Admin and App clients, so we route to the
+                    // appropriate AdminPeerMetaInfoReturned/AppPeerMetaInfoReturned value based on which
+                    // partial class is processing the response (Admin vs App-specific handling occurs
+                    // in the derived classes' DecodeXReceived dispatch, both react to the response type
+                    // set here - default to the Admin variant, App-side overrides as needed below).
+                    case "peer_meta_info":
+                        response.HoloNETResponseType = this is HoloNETClientAdmin ? HoloNETResponseType.AdminPeerMetaInfoReturned : HoloNETResponseType.AppPeerMetaInfoReturned;
+                        break;
+
+                    // New in Holochain 0.6.1 - App API.
+
+                    case "clone_cell_created":
+                        response.HoloNETResponseType = HoloNETResponseType.AppCloneCellCreated;
+                        break;
+
+                    case "clone_cell_enabled":
+                        response.HoloNETResponseType = HoloNETResponseType.AppCloneCellEnabled;
+                        break;
+
+                    case "clone_cell_disabled":
+                        response.HoloNETResponseType = HoloNETResponseType.AppCloneCellDisabled;
+                        break;
+
+                    case "countersigning_session_state":
+                        response.HoloNETResponseType = HoloNETResponseType.AppCountersigningSessionStateReturned;
+                        break;
+
+                    case "countersigning_session_abandoned":
+                        response.HoloNETResponseType = HoloNETResponseType.AppCountersigningSessionAbandoned;
+                        break;
+
+                    case "publish_countersigning_session_triggered":
+                        response.HoloNETResponseType = HoloNETResponseType.AppPublishCountersigningSessionTriggered;
+                        break;
+
+                    case "list_wasm_host_functions":
+                        response.HoloNETResponseType = HoloNETResponseType.AppWasmHostFunctionsListed;
+                        break;
+
+                    // AppResponse::Ok is a generic no-payload success response (wire type "ok").
+                    // ProvideMemproofs is currently the only AppRequest wired through HoloNET that
+                    // expects this generic Ok response back, so we map it directly to
+                    // AppMemproofsProvided here. If other Ok-returning AppRequest methods are wired
+                    // up in future, this mapping will need to become request-id aware instead.
+                    case "ok":
+                        response.HoloNETResponseType = HoloNETResponseType.AppMemproofsProvided;
+                        break;
+
                     case "error":
                         response.HoloNETResponseType = HoloNETResponseType.Error;
                         break;

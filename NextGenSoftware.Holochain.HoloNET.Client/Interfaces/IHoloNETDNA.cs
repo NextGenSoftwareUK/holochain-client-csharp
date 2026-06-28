@@ -43,16 +43,41 @@ namespace NextGenSoftware.Holochain.HoloNET.Client.Interfaces
         bool ShutDownALLHolochainConductors { get; set; }
         ConsoleColor WarningColour { get; set; }
 
-        // Holochain 0.5.6+ Enhanced Features
-        bool EnableKitsune2Networking { get; set; }
-        bool EnableQUICProtocol { get; set; }
-        bool EnableIntegratedKeystore { get; set; }
-        bool EnableCachingLayer { get; set; }
-        bool EnableWASMOptimization { get; set; }
+        /// <summary>
+        /// Network configuration (Holochain 0.6.1 ConductorConfig.network). Currently used by
+        /// HoloNET to set the default RequestTimeoutS used for zome calls / websocket requests.
+        /// </summary>
+        NetworkConfig NetworkConfig { get; set; }
+
+        /// <summary>
+        /// Kitsune2 networking sub-fields of ConductorConfig.network not already covered by
+        /// NetworkConfig (bootstrap/signal/relay URLs, webrtc_config, target_arc_factor, advanced
+        /// kitsune2 JSON). Not yet wired through to any websocket/conductor call.
+        /// </summary>
         Kitsune2Config Kitsune2Config { get; set; }
+
+        /// <summary>
+        /// QUIC transport configuration. NOT VERIFIED against any real Holochain conductor-facing
+        /// config - kept as a placeholder only; has no effect on conductor behaviour.
+        /// </summary>
         QUICConfig QUICConfig { get; set; }
+
+        /// <summary>
+        /// Keystore connection configuration, mirroring holochain_conductor_api's KeystoreConfig.
+        /// Not yet wired through to actual conductor config generation/admin API - out of scope here.
+        /// </summary>
         KeystoreConfig KeystoreConfig { get; set; }
-        CacheConfig CacheConfig { get; set; }
+
+        /// <summary>
+        /// WASM-related configuration. NOT VERIFIED against any real Holochain conductor-facing
+        /// config - kept as a placeholder only; has no effect on conductor behaviour.
+        /// </summary>
         WASMConfig WASMConfig { get; set; }
+
+        /// <summary>
+        /// HoloNET client-side cache configuration (HoloNET-specific concept, not a Rust mirror).
+        /// Not yet consumed by any caching implementation in HoloNET.
+        /// </summary>
+        CacheConfig CacheConfig { get; set; }
     }
 }

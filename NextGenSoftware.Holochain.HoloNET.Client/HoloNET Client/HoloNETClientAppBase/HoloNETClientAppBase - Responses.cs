@@ -178,6 +178,42 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                         case HoloNETResponseType.ZomeResponse:
                             DecodeZomeDataReceived(response, dataReceivedEventArgs);
                             break;
+
+                        case HoloNETResponseType.AppCloneCellCreated:
+                            DecodeCloneCellCreatedReceived(response, dataReceivedEventArgs);
+                            break;
+
+                        case HoloNETResponseType.AppCloneCellEnabled:
+                            DecodeCloneCellEnabledReceived(response, dataReceivedEventArgs);
+                            break;
+
+                        case HoloNETResponseType.AppCloneCellDisabled:
+                            DecodeCloneCellDisabledReceived(response, dataReceivedEventArgs);
+                            break;
+
+                        case HoloNETResponseType.AppCountersigningSessionStateReturned:
+                            DecodeCountersigningSessionStateReturnedReceived(response, dataReceivedEventArgs);
+                            break;
+
+                        case HoloNETResponseType.AppCountersigningSessionAbandoned:
+                            DecodeCountersigningSessionAbandonedReceived(response, dataReceivedEventArgs);
+                            break;
+
+                        case HoloNETResponseType.AppPublishCountersigningSessionTriggered:
+                            DecodePublishCountersigningSessionTriggeredReceived(response, dataReceivedEventArgs);
+                            break;
+
+                        case HoloNETResponseType.AppWasmHostFunctionsListed:
+                            DecodeWasmHostFunctionsListedReceived(response, dataReceivedEventArgs);
+                            break;
+
+                        case HoloNETResponseType.AppMemproofsProvided:
+                            DecodeMemproofsProvidedReceived(response, dataReceivedEventArgs);
+                            break;
+
+                        case HoloNETResponseType.AppPeerMetaInfoReturned:
+                            DecodeAppPeerMetaInfoReturnedReceived(response, dataReceivedEventArgs);
+                            break;
                     }
                 }
             }
@@ -216,6 +252,42 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
                     case HoloNETRequestType.Signal:
                         RaiseSignalReceivedEvent(ProcessResponeError<SignalCallBackEventArgs>(response, dataReceivedEventArgs, "Signal", msg));
+                        break;
+
+                    case HoloNETRequestType.AppCreateCloneCell:
+                        RaiseCloneCellCreatedEvent(ProcessResponeError<CloneCellCreatedCallBackEventArgs>(response, dataReceivedEventArgs, "AppCreateCloneCell", msg));
+                        break;
+
+                    case HoloNETRequestType.AppEnableCloneCell:
+                        RaiseCloneCellEnabledEvent(ProcessResponeError<CloneCellEnabledCallBackEventArgs>(response, dataReceivedEventArgs, "AppEnableCloneCell", msg));
+                        break;
+
+                    case HoloNETRequestType.AppDisableCloneCell:
+                        RaiseCloneCellDisabledEvent(ProcessResponeError<CloneCellDisabledCallBackEventArgs>(response, dataReceivedEventArgs, "AppDisableCloneCell", msg));
+                        break;
+
+                    case HoloNETRequestType.AppGetCountersigningSessionState:
+                        RaiseCountersigningSessionStateReturnedEvent(ProcessResponeError<CountersigningSessionStateReturnedCallBackEventArgs>(response, dataReceivedEventArgs, "AppGetCountersigningSessionState", msg));
+                        break;
+
+                    case HoloNETRequestType.AppAbandonCountersigningSession:
+                        RaiseCountersigningSessionAbandonedEvent(ProcessResponeError<CountersigningSessionAbandonedCallBackEventArgs>(response, dataReceivedEventArgs, "AppAbandonCountersigningSession", msg));
+                        break;
+
+                    case HoloNETRequestType.AppPublishCountersigningSession:
+                        RaisePublishCountersigningSessionTriggeredEvent(ProcessResponeError<PublishCountersigningSessionTriggeredCallBackEventArgs>(response, dataReceivedEventArgs, "AppPublishCountersigningSession", msg));
+                        break;
+
+                    case HoloNETRequestType.AppListWasmHostFunctions:
+                        RaiseWasmHostFunctionsListedEvent(ProcessResponeError<WasmHostFunctionsListedCallBackEventArgs>(response, dataReceivedEventArgs, "AppListWasmHostFunctions", msg));
+                        break;
+
+                    case HoloNETRequestType.AppProvideMemproofs:
+                        RaiseMemproofsProvidedEvent(ProcessResponeError<MemproofsProvidedCallBackEventArgs>(response, dataReceivedEventArgs, "AppProvideMemproofs", msg));
+                        break;
+
+                    case HoloNETRequestType.AppPeerMetaInfo:
+                        RaiseAppPeerMetaInfoReturnedEvent(ProcessResponeError<AppPeerMetaInfoReturnedCallBackEventArgs>(response, dataReceivedEventArgs, "AppPeerMetaInfo", msg));
                         break;
                 }
             }
@@ -418,6 +490,200 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
             RaiseZomeDataReceivedEvent(zomeFunctionCallBackArgs);
         }
 
+        // New in Holochain 0.6.1 - App API.
+
+        private void DecodeCloneCellCreatedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodeCloneCellCreatedReceived. Reason: ";
+            CloneCellCreatedCallBackEventArgs args = CreateHoloNETArgs<CloneCellCreatedCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AppCloneCellCreated;
+
+            try
+            {
+                Logger.Log("APP: CLONE CELL CREATED\n", LogType.Info);
+                ClonedCellResponse clonedCellResponse = MessagePackSerializer.Deserialize<ClonedCellResponse>(response.data, messagePackSerializerOptions);
+
+                if (clonedCellResponse != null)
+                    args.ClonedCell = clonedCellResponse;
+                else
+                    HandleError(args, $"{errorMessage} clonedCellResponse failed to deserialize.");
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaiseCloneCellCreatedEvent(args);
+        }
+
+        private void DecodeCloneCellEnabledReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodeCloneCellEnabledReceived. Reason: ";
+            CloneCellEnabledCallBackEventArgs args = CreateHoloNETArgs<CloneCellEnabledCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AppCloneCellEnabled;
+
+            try
+            {
+                Logger.Log("APP: CLONE CELL ENABLED\n", LogType.Info);
+                ClonedCellResponse clonedCellResponse = MessagePackSerializer.Deserialize<ClonedCellResponse>(response.data, messagePackSerializerOptions);
+
+                if (clonedCellResponse != null)
+                    args.ClonedCell = clonedCellResponse;
+                else
+                    HandleError(args, $"{errorMessage} clonedCellResponse failed to deserialize.");
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaiseCloneCellEnabledEvent(args);
+        }
+
+        private void DecodeCloneCellDisabledReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodeCloneCellDisabledReceived. Reason: ";
+            CloneCellDisabledCallBackEventArgs args = CreateHoloNETArgs<CloneCellDisabledCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AppCloneCellDisabled;
+
+            try
+            {
+                Logger.Log("APP: CLONE CELL DISABLED\n", LogType.Info);
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaiseCloneCellDisabledEvent(args);
+        }
+
+        private void DecodeCountersigningSessionStateReturnedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodeCountersigningSessionStateReturnedReceived. Reason: ";
+            CountersigningSessionStateReturnedCallBackEventArgs args = CreateHoloNETArgs<CountersigningSessionStateReturnedCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AppCountersigningSessionStateReturned;
+
+            try
+            {
+                Logger.Log("APP: COUNTERSIGNING SESSION STATE RETURNED\n", LogType.Info);
+                CountersigningSessionStateResponse sessionStateResponse = MessagePackSerializer.Deserialize<CountersigningSessionStateResponse>(response.data, messagePackSerializerOptions);
+
+                if (sessionStateResponse != null)
+                    args.SessionState = sessionStateResponse;
+                else
+                    HandleError(args, $"{errorMessage} sessionStateResponse failed to deserialize.");
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaiseCountersigningSessionStateReturnedEvent(args);
+        }
+
+        private void DecodeCountersigningSessionAbandonedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodeCountersigningSessionAbandonedReceived. Reason: ";
+            CountersigningSessionAbandonedCallBackEventArgs args = CreateHoloNETArgs<CountersigningSessionAbandonedCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AppCountersigningSessionAbandoned;
+
+            try
+            {
+                Logger.Log("APP: COUNTERSIGNING SESSION ABANDONED\n", LogType.Info);
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaiseCountersigningSessionAbandonedEvent(args);
+        }
+
+        private void DecodePublishCountersigningSessionTriggeredReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodePublishCountersigningSessionTriggeredReceived. Reason: ";
+            PublishCountersigningSessionTriggeredCallBackEventArgs args = CreateHoloNETArgs<PublishCountersigningSessionTriggeredCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AppPublishCountersigningSessionTriggered;
+
+            try
+            {
+                Logger.Log("APP: PUBLISH COUNTERSIGNING SESSION TRIGGERED\n", LogType.Info);
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaisePublishCountersigningSessionTriggeredEvent(args);
+        }
+
+        private void DecodeWasmHostFunctionsListedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodeWasmHostFunctionsListedReceived. Reason: ";
+            WasmHostFunctionsListedCallBackEventArgs args = CreateHoloNETArgs<WasmHostFunctionsListedCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AppWasmHostFunctionsListed;
+
+            try
+            {
+                Logger.Log("APP: WASM HOST FUNCTIONS LISTED\n", LogType.Info);
+                List<string> wasmHostFunctions = MessagePackSerializer.Deserialize<List<string>>(response.data, messagePackSerializerOptions);
+
+                if (wasmHostFunctions != null)
+                    args.WasmHostFunctions = wasmHostFunctions;
+                else
+                    HandleError(args, $"{errorMessage} wasmHostFunctions failed to deserialize.");
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaiseWasmHostFunctionsListedEvent(args);
+        }
+
+        private void DecodeMemproofsProvidedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodeMemproofsProvidedReceived. Reason: ";
+            MemproofsProvidedCallBackEventArgs args = CreateHoloNETArgs<MemproofsProvidedCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AppMemproofsProvided;
+
+            try
+            {
+                Logger.Log("APP: MEMPROOFS PROVIDED\n", LogType.Info);
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaiseMemproofsProvidedEvent(args);
+        }
+
+        private void DecodeAppPeerMetaInfoReturnedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodeAppPeerMetaInfoReturnedReceived. Reason: ";
+            AppPeerMetaInfoReturnedCallBackEventArgs args = CreateHoloNETArgs<AppPeerMetaInfoReturnedCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AppPeerMetaInfoReturned;
+
+            try
+            {
+                Logger.Log("APP: PEER META INFO RETURNED\n", LogType.Info);
+                PeerMetaInfoResponse peerMetaInfoResponse = MessagePackSerializer.Deserialize<PeerMetaInfoResponse>(response.data, messagePackSerializerOptions);
+
+                if (peerMetaInfoResponse != null)
+                    args.PeerMetaInfo = peerMetaInfoResponse;
+                else
+                    HandleError(args, $"{errorMessage} peerMetaInfoResponse failed to deserialize.");
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaiseAppPeerMetaInfoReturnedEvent(args);
+        }
+
         private (Dictionary<string, object>, Dictionary<string, string> keyValuePair, string keyValuePairAsString, Record record) DecodeRawZomeData(Dictionary<object, object> rawAppResponseData, Dictionary<string, object> appResponseData, Dictionary<string, string> keyValuePair, string keyValuePairAsString, Record record = null)
         {
             string value = "";
@@ -605,6 +871,116 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
             _entryDataObjectLookup.Remove(zomeFunctionCallBackArgs.Id);
             _cacheZomeReturnDataLookup.Remove(zomeFunctionCallBackArgs.Id);
             _taskCompletionZomeCallBack.Remove(zomeFunctionCallBackArgs.Id);
+        }
+
+        // New in Holochain 0.6.1 - App API.
+
+        private void RaiseCloneCellCreatedEvent(CloneCellCreatedCallBackEventArgs cloneCellCreatedCallBackEventArgs)
+        {
+            LogEvent("AppCloneCellCreated", cloneCellCreatedCallBackEventArgs);
+            OnCloneCellCreatedCallBack?.Invoke(this, cloneCellCreatedCallBackEventArgs);
+
+            if (_taskCompletionCloneCellCreatedCallBack != null && !string.IsNullOrEmpty(cloneCellCreatedCallBackEventArgs.Id) && _taskCompletionCloneCellCreatedCallBack.ContainsKey(cloneCellCreatedCallBackEventArgs.Id))
+            {
+                _taskCompletionCloneCellCreatedCallBack[cloneCellCreatedCallBackEventArgs.Id].SetResult(cloneCellCreatedCallBackEventArgs);
+                _taskCompletionCloneCellCreatedCallBack.Remove(cloneCellCreatedCallBackEventArgs.Id);
+            }
+        }
+
+        private void RaiseCloneCellEnabledEvent(CloneCellEnabledCallBackEventArgs cloneCellEnabledCallBackEventArgs)
+        {
+            LogEvent("AppCloneCellEnabled", cloneCellEnabledCallBackEventArgs);
+            OnCloneCellEnabledCallBack?.Invoke(this, cloneCellEnabledCallBackEventArgs);
+
+            if (_taskCompletionCloneCellEnabledCallBack != null && !string.IsNullOrEmpty(cloneCellEnabledCallBackEventArgs.Id) && _taskCompletionCloneCellEnabledCallBack.ContainsKey(cloneCellEnabledCallBackEventArgs.Id))
+            {
+                _taskCompletionCloneCellEnabledCallBack[cloneCellEnabledCallBackEventArgs.Id].SetResult(cloneCellEnabledCallBackEventArgs);
+                _taskCompletionCloneCellEnabledCallBack.Remove(cloneCellEnabledCallBackEventArgs.Id);
+            }
+        }
+
+        private void RaiseCloneCellDisabledEvent(CloneCellDisabledCallBackEventArgs cloneCellDisabledCallBackEventArgs)
+        {
+            LogEvent("AppCloneCellDisabled", cloneCellDisabledCallBackEventArgs);
+            OnCloneCellDisabledCallBack?.Invoke(this, cloneCellDisabledCallBackEventArgs);
+
+            if (_taskCompletionCloneCellDisabledCallBack != null && !string.IsNullOrEmpty(cloneCellDisabledCallBackEventArgs.Id) && _taskCompletionCloneCellDisabledCallBack.ContainsKey(cloneCellDisabledCallBackEventArgs.Id))
+            {
+                _taskCompletionCloneCellDisabledCallBack[cloneCellDisabledCallBackEventArgs.Id].SetResult(cloneCellDisabledCallBackEventArgs);
+                _taskCompletionCloneCellDisabledCallBack.Remove(cloneCellDisabledCallBackEventArgs.Id);
+            }
+        }
+
+        private void RaiseCountersigningSessionStateReturnedEvent(CountersigningSessionStateReturnedCallBackEventArgs countersigningSessionStateReturnedCallBackEventArgs)
+        {
+            LogEvent("AppCountersigningSessionStateReturned", countersigningSessionStateReturnedCallBackEventArgs);
+            OnCountersigningSessionStateReturnedCallBack?.Invoke(this, countersigningSessionStateReturnedCallBackEventArgs);
+
+            if (_taskCompletionCountersigningSessionStateReturnedCallBack != null && !string.IsNullOrEmpty(countersigningSessionStateReturnedCallBackEventArgs.Id) && _taskCompletionCountersigningSessionStateReturnedCallBack.ContainsKey(countersigningSessionStateReturnedCallBackEventArgs.Id))
+            {
+                _taskCompletionCountersigningSessionStateReturnedCallBack[countersigningSessionStateReturnedCallBackEventArgs.Id].SetResult(countersigningSessionStateReturnedCallBackEventArgs);
+                _taskCompletionCountersigningSessionStateReturnedCallBack.Remove(countersigningSessionStateReturnedCallBackEventArgs.Id);
+            }
+        }
+
+        private void RaiseCountersigningSessionAbandonedEvent(CountersigningSessionAbandonedCallBackEventArgs countersigningSessionAbandonedCallBackEventArgs)
+        {
+            LogEvent("AppCountersigningSessionAbandoned", countersigningSessionAbandonedCallBackEventArgs);
+            OnCountersigningSessionAbandonedCallBack?.Invoke(this, countersigningSessionAbandonedCallBackEventArgs);
+
+            if (_taskCompletionCountersigningSessionAbandonedCallBack != null && !string.IsNullOrEmpty(countersigningSessionAbandonedCallBackEventArgs.Id) && _taskCompletionCountersigningSessionAbandonedCallBack.ContainsKey(countersigningSessionAbandonedCallBackEventArgs.Id))
+            {
+                _taskCompletionCountersigningSessionAbandonedCallBack[countersigningSessionAbandonedCallBackEventArgs.Id].SetResult(countersigningSessionAbandonedCallBackEventArgs);
+                _taskCompletionCountersigningSessionAbandonedCallBack.Remove(countersigningSessionAbandonedCallBackEventArgs.Id);
+            }
+        }
+
+        private void RaisePublishCountersigningSessionTriggeredEvent(PublishCountersigningSessionTriggeredCallBackEventArgs publishCountersigningSessionTriggeredCallBackEventArgs)
+        {
+            LogEvent("AppPublishCountersigningSessionTriggered", publishCountersigningSessionTriggeredCallBackEventArgs);
+            OnPublishCountersigningSessionTriggeredCallBack?.Invoke(this, publishCountersigningSessionTriggeredCallBackEventArgs);
+
+            if (_taskCompletionPublishCountersigningSessionTriggeredCallBack != null && !string.IsNullOrEmpty(publishCountersigningSessionTriggeredCallBackEventArgs.Id) && _taskCompletionPublishCountersigningSessionTriggeredCallBack.ContainsKey(publishCountersigningSessionTriggeredCallBackEventArgs.Id))
+            {
+                _taskCompletionPublishCountersigningSessionTriggeredCallBack[publishCountersigningSessionTriggeredCallBackEventArgs.Id].SetResult(publishCountersigningSessionTriggeredCallBackEventArgs);
+                _taskCompletionPublishCountersigningSessionTriggeredCallBack.Remove(publishCountersigningSessionTriggeredCallBackEventArgs.Id);
+            }
+        }
+
+        private void RaiseWasmHostFunctionsListedEvent(WasmHostFunctionsListedCallBackEventArgs wasmHostFunctionsListedCallBackEventArgs)
+        {
+            LogEvent("AppWasmHostFunctionsListed", wasmHostFunctionsListedCallBackEventArgs);
+            OnWasmHostFunctionsListedCallBack?.Invoke(this, wasmHostFunctionsListedCallBackEventArgs);
+
+            if (_taskCompletionWasmHostFunctionsListedCallBack != null && !string.IsNullOrEmpty(wasmHostFunctionsListedCallBackEventArgs.Id) && _taskCompletionWasmHostFunctionsListedCallBack.ContainsKey(wasmHostFunctionsListedCallBackEventArgs.Id))
+            {
+                _taskCompletionWasmHostFunctionsListedCallBack[wasmHostFunctionsListedCallBackEventArgs.Id].SetResult(wasmHostFunctionsListedCallBackEventArgs);
+                _taskCompletionWasmHostFunctionsListedCallBack.Remove(wasmHostFunctionsListedCallBackEventArgs.Id);
+            }
+        }
+
+        private void RaiseMemproofsProvidedEvent(MemproofsProvidedCallBackEventArgs memproofsProvidedCallBackEventArgs)
+        {
+            LogEvent("AppMemproofsProvided", memproofsProvidedCallBackEventArgs);
+            OnMemproofsProvidedCallBack?.Invoke(this, memproofsProvidedCallBackEventArgs);
+
+            if (_taskCompletionMemproofsProvidedCallBack != null && !string.IsNullOrEmpty(memproofsProvidedCallBackEventArgs.Id) && _taskCompletionMemproofsProvidedCallBack.ContainsKey(memproofsProvidedCallBackEventArgs.Id))
+            {
+                _taskCompletionMemproofsProvidedCallBack[memproofsProvidedCallBackEventArgs.Id].SetResult(memproofsProvidedCallBackEventArgs);
+                _taskCompletionMemproofsProvidedCallBack.Remove(memproofsProvidedCallBackEventArgs.Id);
+            }
+        }
+
+        private void RaiseAppPeerMetaInfoReturnedEvent(AppPeerMetaInfoReturnedCallBackEventArgs appPeerMetaInfoReturnedCallBackEventArgs)
+        {
+            LogEvent("AppPeerMetaInfoReturned", appPeerMetaInfoReturnedCallBackEventArgs);
+            OnAppPeerMetaInfoReturnedCallBack?.Invoke(this, appPeerMetaInfoReturnedCallBackEventArgs);
+
+            if (_taskCompletionAppPeerMetaInfoReturnedCallBack != null && !string.IsNullOrEmpty(appPeerMetaInfoReturnedCallBackEventArgs.Id) && _taskCompletionAppPeerMetaInfoReturnedCallBack.ContainsKey(appPeerMetaInfoReturnedCallBackEventArgs.Id))
+            {
+                _taskCompletionAppPeerMetaInfoReturnedCallBack[appPeerMetaInfoReturnedCallBackEventArgs.Id].SetResult(appPeerMetaInfoReturnedCallBackEventArgs);
+                _taskCompletionAppPeerMetaInfoReturnedCallBack.Remove(appPeerMetaInfoReturnedCallBackEventArgs.Id);
+            }
         }
 
         private void SetReadyForZomeCalls(string id)

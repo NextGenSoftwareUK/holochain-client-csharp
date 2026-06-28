@@ -1298,6 +1298,179 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
             }, _taskCompletionCoordinatorsUpdatedCallBack, "OnCoordinatorsUpdatedCallBack", conductorResponseCallBackMode, id);
         }
 
+        // New in Holochain 0.6.1 - Admin API.
+
+        /// <summary>
+        /// Revoke a previously granted zome call capability.
+        /// </summary>
+        /// <param name="actionHash">The ActionHash of the capability grant to revoke.</param>
+        /// <param name="cellId">The CellId that the capability grant belongs to.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnZomeCallCapabilityRevokedCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<ZomeCallCapabilityRevokedCallBackEventArgs> RevokeZomeCallCapabilityAsync(byte[] actionHash, CellId cellId, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AdminRevokeZomeCallCapability, "revoke_zome_call_capability", new RevokeZomeCallCapabilityRequest()
+            {
+                action_hash = actionHash,
+                cell_id = cellId
+            }, _taskCompletionZomeCallCapabilityRevokedCallBack, "OnZomeCallCapabilityRevokedCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// Revoke a previously granted zome call capability.
+        /// </summary>
+        /// <param name="actionHash">The ActionHash of the capability grant to revoke.</param>
+        /// <param name="cellId">The CellId that the capability grant belongs to.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public ZomeCallCapabilityRevokedCallBackEventArgs RevokeZomeCallCapability(byte[] actionHash, CellId cellId, string id = null)
+        {
+            return RevokeZomeCallCapabilityAsync(actionHash, cellId, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        /// <summary>
+        /// List the capability grants for a given installed app.
+        /// </summary>
+        /// <param name="installedAppId">The InstalledAppId to list the capability grants for.</param>
+        /// <param name="includeRevoked">Set this to true to also include revoked capability grants.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnCapabilityGrantsListedCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<CapabilityGrantsListedCallBackEventArgs> ListCapabilityGrantsAsync(string installedAppId, bool includeRevoked = false, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AdminListCapabilityGrants, "list_capability_grants", new ListCapabilityGrantsRequest()
+            {
+                installed_app_id = installedAppId,
+                include_revoked = includeRevoked
+            }, _taskCompletionCapabilityGrantsListedCallBack, "OnCapabilityGrantsListedCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// List the capability grants for a given installed app.
+        /// </summary>
+        /// <param name="installedAppId">The InstalledAppId to list the capability grants for.</param>
+        /// <param name="includeRevoked">Set this to true to also include revoked capability grants.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public CapabilityGrantsListedCallBackEventArgs ListCapabilityGrants(string installedAppId, bool includeRevoked = false, string id = null)
+        {
+            return ListCapabilityGrantsAsync(installedAppId, includeRevoked, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        /// <summary>
+        /// Get meta info about a peer that is known via the networking layer (kitsune2), via the admin interface.
+        /// </summary>
+        /// <param name="url">The peer's Url.</param>
+        /// <param name="dnaHashes">Optionally restrict the returned info to these DnaHashes.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnPeerMetaInfoReturnedCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<PeerMetaInfoReturnedCallBackEventArgs> GetPeerMetaInfoAsync(string url, List<byte[]> dnaHashes = null, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AdminPeerMetaInfo, "peer_meta_info", new PeerMetaInfoRequest()
+            {
+                url = url,
+                dna_hashes = dnaHashes
+            }, _taskCompletionPeerMetaInfoReturnedCallBack, "OnPeerMetaInfoReturnedCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// Get meta info about a peer that is known via the networking layer (kitsune2), via the admin interface.
+        /// </summary>
+        /// <param name="url">The peer's Url.</param>
+        /// <param name="dnaHashes">Optionally restrict the returned info to these DnaHashes.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public PeerMetaInfoReturnedCallBackEventArgs GetPeerMetaInfo(string url, List<byte[]> dnaHashes = null, string id = null)
+        {
+            return GetPeerMetaInfoAsync(url, dnaHashes, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        /// <summary>
+        /// Issue a new app authentication token for the given installed app, used to authenticate connections on the app interface.
+        /// </summary>
+        /// <param name="installedAppId">The InstalledAppId to issue the token for.</param>
+        /// <param name="expirySeconds">How many seconds before the token expires (0 = use the conductor default).</param>
+        /// <param name="singleUse">Set this to true to make the token single use only.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnAppAuthenticationTokenIssuedCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<AppAuthenticationTokenIssuedCallBackEventArgs> IssueAppAuthenticationTokenAsync(string installedAppId, ulong expirySeconds = 0, bool singleUse = false, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AdminIssueAppAuthenticationToken, "issue_app_authentication_token", new IssueAppAuthenticationTokenRequest()
+            {
+                installed_app_id = installedAppId,
+                expiry_seconds = expirySeconds,
+                single_use = singleUse
+            }, _taskCompletionAppAuthenticationTokenIssuedCallBack, "OnAppAuthenticationTokenIssuedCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// Issue a new app authentication token for the given installed app, used to authenticate connections on the app interface.
+        /// </summary>
+        /// <param name="installedAppId">The InstalledAppId to issue the token for.</param>
+        /// <param name="expirySeconds">How many seconds before the token expires (0 = use the conductor default).</param>
+        /// <param name="singleUse">Set this to true to make the token single use only.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public AppAuthenticationTokenIssuedCallBackEventArgs IssueAppAuthenticationToken(string installedAppId, ulong expirySeconds = 0, bool singleUse = false, string id = null)
+        {
+            return IssueAppAuthenticationTokenAsync(installedAppId, expirySeconds, singleUse, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        /// <summary>
+        /// Revoke a previously issued app authentication token.
+        /// </summary>
+        /// <param name="token">The raw app authentication token to revoke.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnAppAuthenticationTokenRevokedCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<AppAuthenticationTokenRevokedCallBackEventArgs> RevokeAppAuthenticationTokenAsync(byte[] token, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AdminRevokeAppAuthenticationToken, "revoke_app_authentication_token", new RevokeAppAuthenticationTokenRequest()
+            {
+                token = token
+            }, _taskCompletionAppAuthenticationTokenRevokedCallBack, "OnAppAuthenticationTokenRevokedCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// Revoke a previously issued app authentication token.
+        /// </summary>
+        /// <param name="token">The raw app authentication token to revoke.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public AppAuthenticationTokenRevokedCallBackEventArgs RevokeAppAuthenticationToken(byte[] token, string id = null)
+        {
+            return RevokeAppAuthenticationTokenAsync(token, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        /// <summary>
+        /// Get the cells that are compatible with (i.e. share a lineage with) the given DnaHash. Gated behind the `unstable-migration` feature flag in Holochain 0.6.1 - may not be available on all conductor builds.
+        /// </summary>
+        /// <param name="dnaHash">The DnaHash to find compatible cells for.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnCompatibleCellsReturnedCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<CompatibleCellsReturnedCallBackEventArgs> GetCompatibleCellsAsync(byte[] dnaHash, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AdminGetCompatibleCells, "get_compatible_cells", new GetCompatibleCellsRequest()
+            {
+                dna_hash = dnaHash
+            }, _taskCompletionCompatibleCellsReturnedCallBack, "OnCompatibleCellsReturnedCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// Get the cells that are compatible with (i.e. share a lineage with) the given DnaHash. Gated behind the `unstable-migration` feature flag in Holochain 0.6.1 - may not be available on all conductor builds.
+        /// </summary>
+        /// <param name="dnaHash">The DnaHash to find compatible cells for.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public CompatibleCellsReturnedCallBackEventArgs GetCompatibleCells(byte[] dnaHash, string id = null)
+        {
+            return GetCompatibleCellsAsync(dnaHash, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
         private async Task<T> CallFunctionAsync<T>(HoloNETRequestType requestType, string holochainConductorFunctionName, dynamic holoNETDataDetailed, Dictionary<string, TaskCompletionSource<T>> _taskCompletionCallBack, string eventCallBackName, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null) where T : HoloNETDataReceivedBaseEventArgs, new()
         {
             HoloNETData holoNETData = new HoloNETData()

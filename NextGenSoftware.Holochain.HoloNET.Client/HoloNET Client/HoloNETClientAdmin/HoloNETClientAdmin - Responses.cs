@@ -119,6 +119,30 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                             case HoloNETResponseType.AdminAdminInterfacesAdded:
                                 DecodeAdminInterfacesAddedReceived(response, dataReceivedEventArgs);
                                 break;
+
+                            case HoloNETResponseType.AdminZomeCallCapabilityRevoked:
+                                DecodeZomeCallCapabilityRevokedReceived(response, dataReceivedEventArgs);
+                                break;
+
+                            case HoloNETResponseType.AdminCapabilityGrantsInfoReturned:
+                                DecodeCapabilityGrantsListedReceived(response, dataReceivedEventArgs);
+                                break;
+
+                            case HoloNETResponseType.AdminPeerMetaInfoReturned:
+                                DecodePeerMetaInfoReturnedReceived(response, dataReceivedEventArgs);
+                                break;
+
+                            case HoloNETResponseType.AdminAppAuthenticationTokenIssued:
+                                DecodeAppAuthenticationTokenIssuedReceived(response, dataReceivedEventArgs);
+                                break;
+
+                            case HoloNETResponseType.AdminAppAuthenticationTokenRevoked:
+                                DecodeAppAuthenticationTokenRevokedReceived(response, dataReceivedEventArgs);
+                                break;
+
+                            case HoloNETResponseType.AdminCompatibleCellsReturned:
+                                DecodeCompatibleCellsReturnedReceived(response, dataReceivedEventArgs);
+                                break;
                         }
                     }
                 }
@@ -230,7 +254,31 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
                     case HoloNETRequestType.AdminAddAdminInterfaces:
                         RaiseAdminInterfacesAddedEvent(ProcessResponeError<AdminInterfacesAddedCallBackEventArgs>(response, dataReceivedEventArgs, "AdminAddAdminInterfaces", msg));
-                        break;     
+                        break;
+
+                    case HoloNETRequestType.AdminRevokeZomeCallCapability:
+                        RaiseZomeCallCapabilityRevokedEvent(ProcessResponeError<ZomeCallCapabilityRevokedCallBackEventArgs>(response, dataReceivedEventArgs, "AdminRevokeZomeCallCapability", msg));
+                        break;
+
+                    case HoloNETRequestType.AdminListCapabilityGrants:
+                        RaiseCapabilityGrantsListedEvent(ProcessResponeError<CapabilityGrantsListedCallBackEventArgs>(response, dataReceivedEventArgs, "AdminListCapabilityGrants", msg));
+                        break;
+
+                    case HoloNETRequestType.AdminPeerMetaInfo:
+                        RaisePeerMetaInfoReturnedEvent(ProcessResponeError<PeerMetaInfoReturnedCallBackEventArgs>(response, dataReceivedEventArgs, "AdminPeerMetaInfo", msg));
+                        break;
+
+                    case HoloNETRequestType.AdminIssueAppAuthenticationToken:
+                        RaiseAppAuthenticationTokenIssuedEvent(ProcessResponeError<AppAuthenticationTokenIssuedCallBackEventArgs>(response, dataReceivedEventArgs, "AdminIssueAppAuthenticationToken", msg));
+                        break;
+
+                    case HoloNETRequestType.AdminRevokeAppAuthenticationToken:
+                        RaiseAppAuthenticationTokenRevokedEvent(ProcessResponeError<AppAuthenticationTokenRevokedCallBackEventArgs>(response, dataReceivedEventArgs, "AdminRevokeAppAuthenticationToken", msg));
+                        break;
+
+                    case HoloNETRequestType.AdminGetCompatibleCells:
+                        RaiseCompatibleCellsReturnedEvent(ProcessResponeError<CompatibleCellsReturnedCallBackEventArgs>(response, dataReceivedEventArgs, "AdminGetCompatibleCells", msg));
+                        break;
                 }
             }
 
@@ -724,6 +772,140 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
             RaiseCloneCellDeletedEvent(args);
         }
 
+        // New in Holochain 0.6.1 - Admin API.
+
+        private void DecodeZomeCallCapabilityRevokedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodeZomeCallCapabilityRevokedReceived. Reason: ";
+            ZomeCallCapabilityRevokedCallBackEventArgs args = CreateHoloNETArgs<ZomeCallCapabilityRevokedCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AdminZomeCallCapabilityRevoked;
+
+            try
+            {
+                Logger.Log("ADMIN: ZOME CALL CAPABILITY REVOKED\n", LogType.Info);
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaiseZomeCallCapabilityRevokedEvent(args);
+        }
+
+        private void DecodeCapabilityGrantsListedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodeCapabilityGrantsListedReceived. Reason: ";
+            CapabilityGrantsListedCallBackEventArgs args = CreateHoloNETArgs<CapabilityGrantsListedCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AdminCapabilityGrantsInfoReturned;
+
+            try
+            {
+                Logger.Log("ADMIN: CAPABILITY GRANTS LISTED\n", LogType.Info);
+                CellCapGrantInfo[] capGrantsResponse = MessagePackSerializer.Deserialize<CellCapGrantInfo[]>(response.data, messagePackSerializerOptions);
+
+                if (capGrantsResponse != null)
+                    args.CapGrants.AddRange(capGrantsResponse);
+                else
+                    HandleError(args, $"{errorMessage} capGrantsResponse failed to deserialize.");
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaiseCapabilityGrantsListedEvent(args);
+        }
+
+        private void DecodePeerMetaInfoReturnedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodePeerMetaInfoReturnedReceived. Reason: ";
+            PeerMetaInfoReturnedCallBackEventArgs args = CreateHoloNETArgs<PeerMetaInfoReturnedCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AdminPeerMetaInfoReturned;
+
+            try
+            {
+                Logger.Log("ADMIN: PEER META INFO RETURNED\n", LogType.Info);
+                PeerMetaInfoResponse peerMetaInfoResponse = MessagePackSerializer.Deserialize<PeerMetaInfoResponse>(response.data, messagePackSerializerOptions);
+
+                if (peerMetaInfoResponse != null)
+                    args.PeerMetaInfo = peerMetaInfoResponse;
+                else
+                    HandleError(args, $"{errorMessage} peerMetaInfoResponse failed to deserialize.");
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaisePeerMetaInfoReturnedEvent(args);
+        }
+
+        private void DecodeAppAuthenticationTokenIssuedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodeAppAuthenticationTokenIssuedReceived. Reason: ";
+            AppAuthenticationTokenIssuedCallBackEventArgs args = CreateHoloNETArgs<AppAuthenticationTokenIssuedCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AdminAppAuthenticationTokenIssued;
+
+            try
+            {
+                Logger.Log("ADMIN: APP AUTHENTICATION TOKEN ISSUED\n", LogType.Info);
+                AppAuthenticationTokenIssuedResponse tokenResponse = MessagePackSerializer.Deserialize<AppAuthenticationTokenIssuedResponse>(response.data, messagePackSerializerOptions);
+
+                if (tokenResponse != null)
+                    args.TokenIssued = tokenResponse;
+                else
+                    HandleError(args, $"{errorMessage} tokenResponse failed to deserialize.");
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaiseAppAuthenticationTokenIssuedEvent(args);
+        }
+
+        private void DecodeAppAuthenticationTokenRevokedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodeAppAuthenticationTokenRevokedReceived. Reason: ";
+            AppAuthenticationTokenRevokedCallBackEventArgs args = CreateHoloNETArgs<AppAuthenticationTokenRevokedCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AdminAppAuthenticationTokenRevoked;
+
+            try
+            {
+                Logger.Log("ADMIN: APP AUTHENTICATION TOKEN REVOKED\n", LogType.Info);
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaiseAppAuthenticationTokenRevokedEvent(args);
+        }
+
+        private void DecodeCompatibleCellsReturnedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            string errorMessage = "An unknown error occurred in HoloNETClient.DecodeCompatibleCellsReturnedReceived. Reason: ";
+            CompatibleCellsReturnedCallBackEventArgs args = CreateHoloNETArgs<CompatibleCellsReturnedCallBackEventArgs>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = HoloNETResponseType.AdminCompatibleCellsReturned;
+
+            try
+            {
+                Logger.Log("ADMIN: COMPATIBLE CELLS RETURNED\n", LogType.Info);
+                AppCompatibleCells[] compatibleCellsResponse = MessagePackSerializer.Deserialize<AppCompatibleCells[]>(response.data, messagePackSerializerOptions);
+
+                if (compatibleCellsResponse != null)
+                    args.CompatibleCells.AddRange(compatibleCellsResponse);
+                else
+                    HandleError(args, $"{errorMessage} compatibleCellsResponse failed to deserialize.");
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"{errorMessage} {ex}");
+            }
+
+            RaiseCompatibleCellsReturnedEvent(args);
+        }
+
         private void DecodeStateDumpedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
         {
             string errorMessage = "An unknown error occurred in HoloNETClient.DecodeStateDumpedReceived. Reason: ";
@@ -808,7 +990,19 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                 string dataResponse = MessagePackSerializer.Deserialize<string>(response.data, messagePackSerializerOptions);
 
                 if (dataResponse != null)
+                {
                     args.NetworkStatsDumpJSON = dataResponse;
+
+                    try
+                    {
+                        args.NetworkStats = Newtonsoft.Json.JsonConvert.DeserializeObject<DumpNetworkStatsResponse>(dataResponse);
+                    }
+                    catch (Exception jsonEx)
+                    {
+                        // Non-fatal: keep going, callers still have the raw NetworkStatsDumpJSON escape hatch.
+                        Logger.Log($"Could not parse NetworkStatsDumpJSON into typed DumpNetworkStatsResponse: {jsonEx.Message}", LogType.Warning);
+                    }
+                }
                 else
                     HandleError(args, $"{errorMessage} dataResponse failed to deserialize.");
             }
@@ -1190,6 +1384,80 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
             {
                 _taskCompletionAdminInterfacesAddedCallBack[adminInterfacesAddedCallBackEvent.Id].SetResult(adminInterfacesAddedCallBackEvent);
                 _taskCompletionAdminInterfacesAddedCallBack.Remove(adminInterfacesAddedCallBackEvent.Id);
+            }
+        }
+
+        // New in Holochain 0.6.1 - Admin API.
+
+        private void RaiseZomeCallCapabilityRevokedEvent(ZomeCallCapabilityRevokedCallBackEventArgs zomeCallCapabilityRevokedCallBackEventArgs)
+        {
+            LogEvent("AdminZomeCallCapabilityRevoked", zomeCallCapabilityRevokedCallBackEventArgs);
+            OnZomeCallCapabilityRevokedCallBack?.Invoke(this, zomeCallCapabilityRevokedCallBackEventArgs);
+
+            if (_taskCompletionZomeCallCapabilityRevokedCallBack != null && !string.IsNullOrEmpty(zomeCallCapabilityRevokedCallBackEventArgs.Id) && _taskCompletionZomeCallCapabilityRevokedCallBack.ContainsKey(zomeCallCapabilityRevokedCallBackEventArgs.Id))
+            {
+                _taskCompletionZomeCallCapabilityRevokedCallBack[zomeCallCapabilityRevokedCallBackEventArgs.Id].SetResult(zomeCallCapabilityRevokedCallBackEventArgs);
+                _taskCompletionZomeCallCapabilityRevokedCallBack.Remove(zomeCallCapabilityRevokedCallBackEventArgs.Id);
+            }
+        }
+
+        private void RaiseCapabilityGrantsListedEvent(CapabilityGrantsListedCallBackEventArgs capabilityGrantsListedCallBackEventArgs)
+        {
+            LogEvent("AdminCapabilityGrantsListed", capabilityGrantsListedCallBackEventArgs);
+            OnCapabilityGrantsListedCallBack?.Invoke(this, capabilityGrantsListedCallBackEventArgs);
+
+            if (_taskCompletionCapabilityGrantsListedCallBack != null && !string.IsNullOrEmpty(capabilityGrantsListedCallBackEventArgs.Id) && _taskCompletionCapabilityGrantsListedCallBack.ContainsKey(capabilityGrantsListedCallBackEventArgs.Id))
+            {
+                _taskCompletionCapabilityGrantsListedCallBack[capabilityGrantsListedCallBackEventArgs.Id].SetResult(capabilityGrantsListedCallBackEventArgs);
+                _taskCompletionCapabilityGrantsListedCallBack.Remove(capabilityGrantsListedCallBackEventArgs.Id);
+            }
+        }
+
+        private void RaisePeerMetaInfoReturnedEvent(PeerMetaInfoReturnedCallBackEventArgs peerMetaInfoReturnedCallBackEventArgs)
+        {
+            LogEvent("AdminPeerMetaInfoReturned", peerMetaInfoReturnedCallBackEventArgs);
+            OnPeerMetaInfoReturnedCallBack?.Invoke(this, peerMetaInfoReturnedCallBackEventArgs);
+
+            if (_taskCompletionPeerMetaInfoReturnedCallBack != null && !string.IsNullOrEmpty(peerMetaInfoReturnedCallBackEventArgs.Id) && _taskCompletionPeerMetaInfoReturnedCallBack.ContainsKey(peerMetaInfoReturnedCallBackEventArgs.Id))
+            {
+                _taskCompletionPeerMetaInfoReturnedCallBack[peerMetaInfoReturnedCallBackEventArgs.Id].SetResult(peerMetaInfoReturnedCallBackEventArgs);
+                _taskCompletionPeerMetaInfoReturnedCallBack.Remove(peerMetaInfoReturnedCallBackEventArgs.Id);
+            }
+        }
+
+        private void RaiseAppAuthenticationTokenIssuedEvent(AppAuthenticationTokenIssuedCallBackEventArgs appAuthenticationTokenIssuedCallBackEventArgs)
+        {
+            LogEvent("AdminAppAuthenticationTokenIssued", appAuthenticationTokenIssuedCallBackEventArgs);
+            OnAppAuthenticationTokenIssuedCallBack?.Invoke(this, appAuthenticationTokenIssuedCallBackEventArgs);
+
+            if (_taskCompletionAppAuthenticationTokenIssuedCallBack != null && !string.IsNullOrEmpty(appAuthenticationTokenIssuedCallBackEventArgs.Id) && _taskCompletionAppAuthenticationTokenIssuedCallBack.ContainsKey(appAuthenticationTokenIssuedCallBackEventArgs.Id))
+            {
+                _taskCompletionAppAuthenticationTokenIssuedCallBack[appAuthenticationTokenIssuedCallBackEventArgs.Id].SetResult(appAuthenticationTokenIssuedCallBackEventArgs);
+                _taskCompletionAppAuthenticationTokenIssuedCallBack.Remove(appAuthenticationTokenIssuedCallBackEventArgs.Id);
+            }
+        }
+
+        private void RaiseAppAuthenticationTokenRevokedEvent(AppAuthenticationTokenRevokedCallBackEventArgs appAuthenticationTokenRevokedCallBackEventArgs)
+        {
+            LogEvent("AdminAppAuthenticationTokenRevoked", appAuthenticationTokenRevokedCallBackEventArgs);
+            OnAppAuthenticationTokenRevokedCallBack?.Invoke(this, appAuthenticationTokenRevokedCallBackEventArgs);
+
+            if (_taskCompletionAppAuthenticationTokenRevokedCallBack != null && !string.IsNullOrEmpty(appAuthenticationTokenRevokedCallBackEventArgs.Id) && _taskCompletionAppAuthenticationTokenRevokedCallBack.ContainsKey(appAuthenticationTokenRevokedCallBackEventArgs.Id))
+            {
+                _taskCompletionAppAuthenticationTokenRevokedCallBack[appAuthenticationTokenRevokedCallBackEventArgs.Id].SetResult(appAuthenticationTokenRevokedCallBackEventArgs);
+                _taskCompletionAppAuthenticationTokenRevokedCallBack.Remove(appAuthenticationTokenRevokedCallBackEventArgs.Id);
+            }
+        }
+
+        private void RaiseCompatibleCellsReturnedEvent(CompatibleCellsReturnedCallBackEventArgs compatibleCellsReturnedCallBackEventArgs)
+        {
+            LogEvent("AdminCompatibleCellsReturned", compatibleCellsReturnedCallBackEventArgs);
+            OnCompatibleCellsReturnedCallBack?.Invoke(this, compatibleCellsReturnedCallBackEventArgs);
+
+            if (_taskCompletionCompatibleCellsReturnedCallBack != null && !string.IsNullOrEmpty(compatibleCellsReturnedCallBackEventArgs.Id) && _taskCompletionCompatibleCellsReturnedCallBack.ContainsKey(compatibleCellsReturnedCallBackEventArgs.Id))
+            {
+                _taskCompletionCompatibleCellsReturnedCallBack[compatibleCellsReturnedCallBackEventArgs.Id].SetResult(compatibleCellsReturnedCallBackEventArgs);
+                _taskCompletionCompatibleCellsReturnedCallBack.Remove(compatibleCellsReturnedCallBackEventArgs.Id);
             }
         }
 

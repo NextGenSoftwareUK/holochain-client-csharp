@@ -4,9 +4,11 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Collections.Generic;
 using MessagePack;
 using Blake2Fast;
 using NextGenSoftware.Logging;
+using NextGenSoftware.Holochain.HoloNET.Client.Data.Admin.Requests;
 using NextGenSoftware.Holochain.HoloNET.Client.Interfaces;
 using Sodium;
 
@@ -555,9 +557,11 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         /// <param name="matchIdToZomeFuncInCallback">This is an optional param, which defaults to true. Set this to true if you wish HoloNET to give the zome and zome function that made the call in the callback/event. If this is false then only the id will be given in the callback. This uses a small internal cache to match up the id to the given zome/function. Set this to false if you wish to save a tiny amount of memory by not utilizing this cache. If it is false then the `Zome` and `ZomeFunction` params will be missing in the ZomeCallBack, you will need to manually match the `id` to the call yourself. NOTE: If HoloNETDNA.EnforceRequestToResponseIdMatchingBehaviour is set to Warn or Error then this param will be ignored and the matching will always occur.</param>
         /// <param name="cachReturnData">This is an optional param, which defaults to false. Set this to true if you wish HoloNET to cache the response retrieved from holochain. Subsequent calls will return this cached data rather than calling the Holochain conductor again. Use this for static data that is not going to change for performance gains.</param>
         /// <param name="zomeResultCallBackMode">This is an optional param, where the caller can choose whether to wait for the Holochain Conductor response before returning to the caller or to return immediately once the request has been sent to the Holochain Conductor and then raise the OnDataReceived and then the OnZomeFunctionCallBack or OnSignalsCallBack events depending on the type of request sent to the Holochain Conductor.</param>
+        /// <param name="callZomeOptions">Optional per-call options (e.g. a request timeout override). If null, defaults are used (see CallZomeOptions and HoloNETDNA.NetworkConfig.RequestTimeoutS).</param>
         /// <returns></returns>
-        public async Task<ZomeFunctionCallBackEventArgs> CallZomeFunctionAsync(string id, string zome, string function, ZomeFunctionCallBack callback, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false, ConductorResponseCallBackMode zomeResultCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse)
+        public async Task<ZomeFunctionCallBackEventArgs> CallZomeFunctionAsync(string id, string zome, string function, ZomeFunctionCallBack callback, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false, ConductorResponseCallBackMode zomeResultCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, CallZomeOptions callZomeOptions = null)
         {
+            callZomeOptions ??= CallZomeOptions.Default;
             try
             {
                 _taskCompletionZomeCallBack[id] = new TaskCompletionSource<ZomeFunctionCallBackEventArgs>();
@@ -666,11 +670,12 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                     //byte[] hash = Blake2b.ComputeHash(MessagePackSerializer.Serialize(payload));
                     var sig = Sodium.PublicKeyAuth.SignDetached(hash, _signingCredentialsForCell[cellId].KeyPair.PrivateKey);
 
+                    // Kept for backwards compatibility with any code that inspects the flattened
+                    // ZomeCallSigned shape (e.g. via OnDataReceived/raw request introspection).
                     ZomeCallSigned signedPayload = new ZomeCallSigned()
                     {
                         cap_secret = payload.cap_secret,
-                        //cell_id = payload.cell_id,
-                        cell_id = [payload.cell_id_dna_hash, payload.cell_id_agent_pub_key],
+                        cell_id = new CellId(payload.cell_id_dna_hash, payload.cell_id_agent_pub_key),
                         fn_name = payload.fn_name,
                         zome_name = payload.zome_name,
                         payload = payload.payload,
@@ -680,10 +685,19 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                         signature = sig[0..64]
                     };
 
+                    // Holochain 0.6.1 wire shape for AppRequest::CallZome is
+                    // ZomeCallParamsSigned { bytes: ExternIO, signature: Signature } where
+                    // `bytes` is the holochain_serialized_bytes (msgpack struct-map) encoding of
+                    // the unsigned ZomeCall/ZomeCallParams fields above (`signedPayload` minus
+                    // the signature). See ZomeCallParamsSigned.cs for the source reference.
+                    byte[] unsignedBytes = MessagePackSerializer.Serialize<ZomeCall>(signedPayload, MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.None));
+
+                    ZomeCallParamsSigned zomeCallParamsSigned = new ZomeCallParamsSigned(unsignedBytes, signedPayload.signature);
+
                     HoloNETData holoNETData = new HoloNETData()
                     {
                         type = "call_zome",
-                        data = signedPayload
+                        data = zomeCallParamsSigned
                     };
 
                     await SendHoloNETRequestAsync(holoNETData, HoloNETRequestType.ZomeCall, id);
@@ -691,6 +705,22 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                     if (zomeResultCallBackMode == ConductorResponseCallBackMode.WaitForHolochainConductorResponse)
                     {
                         Task<ZomeFunctionCallBackEventArgs> returnValue = _taskCompletionZomeCallBack[id].Task;
+                        int timeoutSeconds = callZomeOptions?.TimeoutSeconds ?? HoloNETDNA.NetworkConfig?.RequestTimeoutS ?? 60;
+
+                        if (timeoutSeconds > 0)
+                        {
+                            Task delayTask = Task.Delay(TimeSpan.FromSeconds(timeoutSeconds));
+                            Task completedTask = await Task.WhenAny(returnValue, delayTask);
+
+                            if (completedTask == delayTask)
+                            {
+                                string timeoutMsg = $"Zome call to {zome}.{function} (Id: {id}) timed out after {timeoutSeconds} seconds.";
+                                HandleError(timeoutMsg, null);
+                                _taskCompletionZomeCallBack.Remove(id);
+                                return new ZomeFunctionCallBackEventArgs() { EndPoint = EndPoint, Id = id, Zome = zome, ZomeFunction = function, IsError = true, Message = timeoutMsg };
+                            }
+                        }
+
                         return await returnValue;
                     }
                     else
@@ -941,6 +971,269 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         public ZomeFunctionCallBackEventArgs CallZomeFunction(string id, string zome, string function, ZomeFunctionCallBack callback, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false)
         {
             return CallZomeFunctionAsync(id, zome, function, callback, paramsObject, matchIdToZomeFuncInCallback, cachReturnData, ConductorResponseCallBackMode.UseCallBackEvents).Result;
+        }
+
+        // New in Holochain 0.6.1 - App API.
+
+        /// <summary>
+        /// Create a new clone cell for the given role.
+        /// </summary>
+        /// <param name="roleName">The RoleName to create the clone cell for.</param>
+        /// <param name="modifiers">The DNA modifiers to apply to the clone cell (network_seed/properties/origin_time/quantum_time - pass a plain object/dictionary with the modifier fields you need).</param>
+        /// <param name="membraneProof">The optional membrane proof for the clone cell.</param>
+        /// <param name="name">The optional human readable name for the clone cell.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnCloneCellCreatedCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<CloneCellCreatedCallBackEventArgs> CreateCloneCellAsync(string roleName, dynamic modifiers = null, byte[] membraneProof = null, string name = null, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AppCreateCloneCell, "create_clone_cell", new CreateCloneCellRequest()
+            {
+                role_name = roleName,
+                modifiers = modifiers,
+                membrane_proof = membraneProof,
+                name = name
+            }, _taskCompletionCloneCellCreatedCallBack, "OnCloneCellCreatedCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// Create a new clone cell for the given role.
+        /// </summary>
+        /// <param name="roleName">The RoleName to create the clone cell for.</param>
+        /// <param name="modifiers">The DNA modifiers to apply to the clone cell (network_seed/properties/origin_time/quantum_time - pass a plain object/dictionary with the modifier fields you need).</param>
+        /// <param name="membraneProof">The optional membrane proof for the clone cell.</param>
+        /// <param name="name">The optional human readable name for the clone cell.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public CloneCellCreatedCallBackEventArgs CreateCloneCell(string roleName, dynamic modifiers = null, byte[] membraneProof = null, string name = null, string id = null)
+        {
+            return CreateCloneCellAsync(roleName, modifiers, membraneProof, name, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        /// <summary>
+        /// Enable a previously disabled clone cell.
+        /// </summary>
+        /// <param name="cloneCellId">Either the clone id (string, e.g. "role_name.0") or the CellId (byte[][]) of the clone cell to enable.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnCloneCellEnabledCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<CloneCellEnabledCallBackEventArgs> EnableCloneCellAsync(dynamic cloneCellId, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AppEnableCloneCell, "enable_clone_cell", new EnableCloneCellRequest()
+            {
+                clone_cell_id = cloneCellId
+            }, _taskCompletionCloneCellEnabledCallBack, "OnCloneCellEnabledCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// Enable a previously disabled clone cell.
+        /// </summary>
+        /// <param name="cloneCellId">Either the clone id (string, e.g. "role_name.0") or the CellId (byte[][]) of the clone cell to enable.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public CloneCellEnabledCallBackEventArgs EnableCloneCell(dynamic cloneCellId, string id = null)
+        {
+            return EnableCloneCellAsync(cloneCellId, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        /// <summary>
+        /// Disable a clone cell.
+        /// </summary>
+        /// <param name="cloneCellId">Either the clone id (string, e.g. "role_name.0") or the CellId (byte[][]) of the clone cell to disable.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnCloneCellDisabledCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<CloneCellDisabledCallBackEventArgs> DisableCloneCellAsync(dynamic cloneCellId, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AppDisableCloneCell, "disable_clone_cell", new DisableCloneCellRequest()
+            {
+                clone_cell_id = cloneCellId
+            }, _taskCompletionCloneCellDisabledCallBack, "OnCloneCellDisabledCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// Disable a clone cell.
+        /// </summary>
+        /// <param name="cloneCellId">Either the clone id (string, e.g. "role_name.0") or the CellId (byte[][]) of the clone cell to disable.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public CloneCellDisabledCallBackEventArgs DisableCloneCell(dynamic cloneCellId, string id = null)
+        {
+            return DisableCloneCellAsync(cloneCellId, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        /// <summary>
+        /// Get the state of a countersigning session for the given cell. Gated behind the `unstable-countersigning` feature flag in Holochain 0.6.1 - may not be available on all conductor builds.
+        /// </summary>
+        /// <param name="cellId">The CellId to get the countersigning session state for.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnCountersigningSessionStateReturnedCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<CountersigningSessionStateReturnedCallBackEventArgs> GetCountersigningSessionStateAsync(CellId cellId, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AppGetCountersigningSessionState, "get_countersigning_session_state", new CountersigningCellIdRequest()
+            {
+                cell_id = cellId
+            }, _taskCompletionCountersigningSessionStateReturnedCallBack, "OnCountersigningSessionStateReturnedCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// Get the state of a countersigning session for the given cell. Gated behind the `unstable-countersigning` feature flag in Holochain 0.6.1 - may not be available on all conductor builds.
+        /// </summary>
+        /// <param name="cellId">The CellId to get the countersigning session state for.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public CountersigningSessionStateReturnedCallBackEventArgs GetCountersigningSessionState(CellId cellId, string id = null)
+        {
+            return GetCountersigningSessionStateAsync(cellId, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        /// <summary>
+        /// Abandon an in-progress countersigning session for the given cell. Gated behind the `unstable-countersigning` feature flag in Holochain 0.6.1 - may not be available on all conductor builds.
+        /// </summary>
+        /// <param name="cellId">The CellId to abandon the countersigning session for.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnCountersigningSessionAbandonedCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<CountersigningSessionAbandonedCallBackEventArgs> AbandonCountersigningSessionAsync(CellId cellId, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AppAbandonCountersigningSession, "abandon_countersigning_session", new CountersigningCellIdRequest()
+            {
+                cell_id = cellId
+            }, _taskCompletionCountersigningSessionAbandonedCallBack, "OnCountersigningSessionAbandonedCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// Abandon an in-progress countersigning session for the given cell. Gated behind the `unstable-countersigning` feature flag in Holochain 0.6.1 - may not be available on all conductor builds.
+        /// </summary>
+        /// <param name="cellId">The CellId to abandon the countersigning session for.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public CountersigningSessionAbandonedCallBackEventArgs AbandonCountersigningSession(CellId cellId, string id = null)
+        {
+            return AbandonCountersigningSessionAsync(cellId, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        /// <summary>
+        /// Publish (force-finalise) an in-progress countersigning session for the given cell. Gated behind the `unstable-countersigning` feature flag in Holochain 0.6.1 - may not be available on all conductor builds.
+        /// </summary>
+        /// <param name="cellId">The CellId to publish the countersigning session for.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnPublishCountersigningSessionTriggeredCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<PublishCountersigningSessionTriggeredCallBackEventArgs> PublishCountersigningSessionAsync(CellId cellId, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AppPublishCountersigningSession, "publish_countersigning_session", new CountersigningCellIdRequest()
+            {
+                cell_id = cellId
+            }, _taskCompletionPublishCountersigningSessionTriggeredCallBack, "OnPublishCountersigningSessionTriggeredCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// Publish (force-finalise) an in-progress countersigning session for the given cell. Gated behind the `unstable-countersigning` feature flag in Holochain 0.6.1 - may not be available on all conductor builds.
+        /// </summary>
+        /// <param name="cellId">The CellId to publish the countersigning session for.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public PublishCountersigningSessionTriggeredCallBackEventArgs PublishCountersigningSession(CellId cellId, string id = null)
+        {
+            return PublishCountersigningSessionAsync(cellId, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        /// <summary>
+        /// List the names of the host functions available to WASM code running in this conductor.
+        /// </summary>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnWasmHostFunctionsListedCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<WasmHostFunctionsListedCallBackEventArgs> ListWasmHostFunctionsAsync(ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AppListWasmHostFunctions, "list_wasm_host_functions", null, _taskCompletionWasmHostFunctionsListedCallBack, "OnWasmHostFunctionsListedCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// List the names of the host functions available to WASM code running in this conductor.
+        /// </summary>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public WasmHostFunctionsListedCallBackEventArgs ListWasmHostFunctions(string id = null)
+        {
+            return ListWasmHostFunctionsAsync(ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        /// <summary>
+        /// Provide the membrane proofs for this app, used when the app was installed with `allow_deferred_memproofs` and the membrane proofs were not provided at installation time.
+        /// </summary>
+        /// <param name="membraneProofs">A role-name-keyed dictionary of raw membrane proof bytes, one per role that requires a membrane proof.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnMemproofsProvidedCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<MemproofsProvidedCallBackEventArgs> ProvideMemproofsAsync(Dictionary<string, byte[]> membraneProofs, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AppProvideMemproofs, "provide_memproofs", membraneProofs, _taskCompletionMemproofsProvidedCallBack, "OnMemproofsProvidedCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// Provide the membrane proofs for this app, used when the app was installed with `allow_deferred_memproofs` and the membrane proofs were not provided at installation time.
+        /// </summary>
+        /// <param name="membraneProofs">A role-name-keyed dictionary of raw membrane proof bytes, one per role that requires a membrane proof.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public MemproofsProvidedCallBackEventArgs ProvideMemproofs(Dictionary<string, byte[]> membraneProofs, string id = null)
+        {
+            return ProvideMemproofsAsync(membraneProofs, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        /// <summary>
+        /// Get meta info about a peer that is known via the networking layer (kitsune2), via the app interface.
+        /// </summary>
+        /// <param name="url">The peer's Url.</param>
+        /// <param name="dnaHashes">Optionally restrict the returned info to these DnaHashes.</param>
+        /// <param name="conductorResponseCallBackMode">The Concuctor Response CallBack Mode, set this to 'WaitForHolochainConductorResponse' if you want the function to wait for the Holochain Conductor response before returning that response or set it to 'UseCallBackEvents' to return from the function immediately and then raise the 'OnAppPeerMetaInfoReturnedCallBack' event when the conductor responds.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public async Task<AppPeerMetaInfoReturnedCallBackEventArgs> GetAppPeerMetaInfoAsync(string url, List<byte[]> dnaHashes = null, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null)
+        {
+            return await CallFunctionAsync(HoloNETRequestType.AppPeerMetaInfo, "peer_meta_info", new PeerMetaInfoRequest()
+            {
+                url = url,
+                dna_hashes = dnaHashes
+            }, _taskCompletionAppPeerMetaInfoReturnedCallBack, "OnAppPeerMetaInfoReturnedCallBack", conductorResponseCallBackMode, id);
+        }
+
+        /// <summary>
+        /// Get meta info about a peer that is known via the networking layer (kitsune2), via the app interface.
+        /// </summary>
+        /// <param name="url">The peer's Url.</param>
+        /// <param name="dnaHashes">Optionally restrict the returned info to these DnaHashes.</param>
+        /// <param name="id">The request id, leave null if you want HoloNET to manage this for you.</param>
+        /// <returns></returns>
+        public AppPeerMetaInfoReturnedCallBackEventArgs GetAppPeerMetaInfo(string url, List<byte[]> dnaHashes = null, string id = null)
+        {
+            return GetAppPeerMetaInfoAsync(url, dnaHashes, ConductorResponseCallBackMode.UseCallBackEvents, id).Result;
+        }
+
+        private async Task<T> CallFunctionAsync<T>(HoloNETRequestType requestType, string holochainConductorFunctionName, dynamic holoNETDataDetailed, Dictionary<string, TaskCompletionSource<T>> taskCompletionCallBack, string eventCallBackName, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null) where T : HoloNETDataReceivedBaseEventArgs, new()
+        {
+            HoloNETData holoNETData = new HoloNETData()
+            {
+                type = holochainConductorFunctionName,
+                data = holoNETDataDetailed
+            };
+
+            if (string.IsNullOrEmpty(id))
+                id = GetRequestId();
+
+            taskCompletionCallBack[id] = new TaskCompletionSource<T> { };
+            await SendHoloNETRequestAsync(holoNETData, requestType, id);
+
+            if (conductorResponseCallBackMode == ConductorResponseCallBackMode.WaitForHolochainConductorResponse)
+            {
+                Task<T> returnValue = taskCompletionCallBack[id].Task;
+                return await returnValue;
+            }
+            else
+                return new T() { EndPoint = EndPoint, Id = id, Message = $"conductorResponseCallBackMode is set to UseCallBackEvents so please wait for {eventCallBackName} event for the result." };
         }
     }
 }

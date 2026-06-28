@@ -36,6 +36,14 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         private Dictionary<string, TaskCompletionSource<RecordsGraftedCallBackEventArgs>> _taskCompletionRecordsGraftedCallBack = new Dictionary<string, TaskCompletionSource<RecordsGraftedCallBackEventArgs>>();
         private Dictionary<string, TaskCompletionSource<AdminInterfacesAddedCallBackEventArgs>> _taskCompletionAdminInterfacesAddedCallBack = new Dictionary<string, TaskCompletionSource<AdminInterfacesAddedCallBackEventArgs>>();
 
+        // New in Holochain 0.6.1 - Admin API.
+        private Dictionary<string, TaskCompletionSource<ZomeCallCapabilityRevokedCallBackEventArgs>> _taskCompletionZomeCallCapabilityRevokedCallBack = new Dictionary<string, TaskCompletionSource<ZomeCallCapabilityRevokedCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<CapabilityGrantsListedCallBackEventArgs>> _taskCompletionCapabilityGrantsListedCallBack = new Dictionary<string, TaskCompletionSource<CapabilityGrantsListedCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<PeerMetaInfoReturnedCallBackEventArgs>> _taskCompletionPeerMetaInfoReturnedCallBack = new Dictionary<string, TaskCompletionSource<PeerMetaInfoReturnedCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<AppAuthenticationTokenIssuedCallBackEventArgs>> _taskCompletionAppAuthenticationTokenIssuedCallBack = new Dictionary<string, TaskCompletionSource<AppAuthenticationTokenIssuedCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<AppAuthenticationTokenRevokedCallBackEventArgs>> _taskCompletionAppAuthenticationTokenRevokedCallBack = new Dictionary<string, TaskCompletionSource<AppAuthenticationTokenRevokedCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<CompatibleCellsReturnedCallBackEventArgs>> _taskCompletionCompatibleCellsReturnedCallBack = new Dictionary<string, TaskCompletionSource<CompatibleCellsReturnedCallBackEventArgs>>();
+
         //Events
 
         public delegate void InstallEnableSignAttachAndConnectToHappCallBack(object sender, InstallEnableSignAttachAndConnectToHappEventArgs e);
@@ -247,6 +255,56 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         /// Fired when a response is received from the conductor containing the requested Agent Info after the GetAgentInfoAsync/GetAgentInfo method is called.
         /// </summary>
         public event AdminInterfacesAddedCallBack OnAdminInterfacesAddedCallBack;
+
+
+        // New in Holochain 0.6.1 - Admin API.
+
+        public delegate void ZomeCallCapabilityRevokedCallBack(object sender, ZomeCallCapabilityRevokedCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the RevokeZomeCallCapabilityAsync/RevokeZomeCallCapability method is called.
+        /// </summary>
+        public event ZomeCallCapabilityRevokedCallBack OnZomeCallCapabilityRevokedCallBack;
+
+
+        public delegate void CapabilityGrantsListedCallBack(object sender, CapabilityGrantsListedCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the ListCapabilityGrantsAsync/ListCapabilityGrants method is called.
+        /// </summary>
+        public event CapabilityGrantsListedCallBack OnCapabilityGrantsListedCallBack;
+
+
+        public delegate void PeerMetaInfoReturnedCallBack(object sender, PeerMetaInfoReturnedCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the GetPeerMetaInfoAsync/GetPeerMetaInfo method is called.
+        /// </summary>
+        public event PeerMetaInfoReturnedCallBack OnPeerMetaInfoReturnedCallBack;
+
+
+        public delegate void AppAuthenticationTokenIssuedCallBack(object sender, AppAuthenticationTokenIssuedCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the IssueAppAuthenticationTokenAsync/IssueAppAuthenticationToken method is called.
+        /// </summary>
+        public event AppAuthenticationTokenIssuedCallBack OnAppAuthenticationTokenIssuedCallBack;
+
+
+        public delegate void AppAuthenticationTokenRevokedCallBack(object sender, AppAuthenticationTokenRevokedCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the RevokeAppAuthenticationTokenAsync/RevokeAppAuthenticationToken method is called.
+        /// </summary>
+        public event AppAuthenticationTokenRevokedCallBack OnAppAuthenticationTokenRevokedCallBack;
+
+
+        public delegate void CompatibleCellsReturnedCallBack(object sender, CompatibleCellsReturnedCallBackEventArgs e);
+
+        /// <summary>
+        /// Fired when a response is received from the conductor after the GetCompatibleCellsAsync/GetCompatibleCells method is called.
+        /// </summary>
+        public event CompatibleCellsReturnedCallBack OnCompatibleCellsReturnedCallBack;
 
 
         /// <summary>

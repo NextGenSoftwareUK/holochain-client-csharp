@@ -1,232 +1,64 @@
-using System;
-using System.Collections.Generic;
-
 namespace NextGenSoftware.Holochain.HoloNET.Client
 {
     /// <summary>
-    /// Configuration for integrated keystore in Holochain 0.5.6+
+    /// Mirrors holochain_conductor_api::config::conductor::keystore_config::KeystoreConfig from
+    /// Holochain 0.6.1. This defines how the conductor connects to a keystore (lair-keystore),
+    /// NOT a client-configurable KDF algorithm/keystore-type as a previous, unverified pass on
+    /// this file invented (KDFAlgorithm = "PBKDF2", Type = KeystoreType.FileSystem, HSM support,
+    /// key rotation/backup/recovery settings, etc. - none of that exists in the real Rust struct).
+    ///
+    /// The real type is a serde tagged enum with exactly three variants:
+    /// DangerTestKeystore, LairServer { connection_url }, LairServerInProc { lair_root }.
+    /// There is no KDF, password, key rotation, backup, recovery, or HSM configuration exposed
+    /// here at all - lair-keystore manages its own passphrase handling via the conductor CLI
+    /// entrypoint, not via this config struct.
+    ///
+    /// Verified against:
+    /// https://github.com/holochain/holochain/blob/holochain-0.6.1/crates/holochain_conductor_api/src/config/conductor/keystore_config.rs
     /// </summary>
     public class KeystoreConfig
     {
         /// <summary>
-        /// Enable integrated keystore. Default is true.
+        /// Which keystore connection mode to use. Mirrors the Rust enum's serde "type" tag
+        /// (rename_all = "snake_case"): danger_test_keystore, lair_server, lair_server_in_proc.
+        /// Default mirrors Rust's Default impl: LairServerInProc.
         /// </summary>
-        public bool Enabled { get; set; } = true;
+        public KeystoreConfigType Type { get; set; } = KeystoreConfigType.LairServerInProc;
 
         /// <summary>
-        /// Auto-generate keys when needed. Default is true.
+        /// Only used when Type == LairServer. The "connectionUrl" as defined in the target
+        /// lair-keystore-config.yaml (also obtainable by running `lair-keystore url`).
+        /// Mirrors LairServer.connection_url: url2::Url2.
         /// </summary>
-        public bool AutoGenerateKeys { get; set; } = true;
+        public string ConnectionUrl { get; set; } = "";
 
         /// <summary>
-        /// Keystore type to use.
+        /// Only used when Type == LairServerInProc. The "lair_root" path, i.e. the directory
+        /// containing the lair-keystore-config.yaml file. If null/empty, the conductor defaults
+        /// to [environment_path]/ks. Mirrors LairServerInProc.lair_root: Option&lt;KeystorePath&gt;.
         /// </summary>
-        public KeystoreType Type { get; set; } = KeystoreType.FileSystem;
-
-        /// <summary>
-        /// Keystore path for file system keystore.
-        /// </summary>
-        public string Path { get; set; } = "";
-
-        /// <summary>
-        /// Keystore password for encryption.
-        /// </summary>
-        public string Password { get; set; } = "";
-
-        /// <summary>
-        /// Enable key derivation function (KDF).
-        /// </summary>
-        public bool EnableKDF { get; set; } = true;
-
-        /// <summary>
-        /// KDF algorithm to use.
-        /// </summary>
-        public string KDFAlgorithm { get; set; } = "PBKDF2";
-
-        /// <summary>
-        /// KDF iterations for key derivation.
-        /// </summary>
-        public int KDFIterations { get; set; } = 100000;
-
-        /// <summary>
-        /// Enable key rotation.
-        /// </summary>
-        public bool EnableKeyRotation { get; set; } = true;
-
-        /// <summary>
-        /// Key rotation interval in days.
-        /// </summary>
-        public int KeyRotationIntervalDays { get; set; } = 90;
-
-        /// <summary>
-        /// Maximum number of keys to keep.
-        /// </summary>
-        public int MaxKeys { get; set; } = 10;
-
-        /// <summary>
-        /// Enable key backup.
-        /// </summary>
-        public bool EnableKeyBackup { get; set; } = true;
-
-        /// <summary>
-        /// Backup path for keys.
-        /// </summary>
-        public string BackupPath { get; set; } = "";
-
-        /// <summary>
-        /// Enable key recovery.
-        /// </summary>
-        public bool EnableKeyRecovery { get; set; } = true;
-
-        /// <summary>
-        /// Recovery phrase for key recovery.
-        /// </summary>
-        public string RecoveryPhrase { get; set; } = "";
-
-        /// <summary>
-        /// Enable hardware security module (HSM) support.
-        /// </summary>
-        public bool EnableHSM { get; set; } = false;
-
-        /// <summary>
-        /// HSM configuration.
-        /// </summary>
-        public HSMConfig HSM { get; set; } = new HSMConfig();
-
-        /// <summary>
-        /// Key generation configuration.
-        /// </summary>
-        public KeyGenerationConfig KeyGeneration { get; set; } = new KeyGenerationConfig();
-
-        /// <summary>
-        /// Key storage configuration.
-        /// </summary>
-        public KeyStorageConfig KeyStorage { get; set; } = new KeyStorageConfig();
+        public string LairRoot { get; set; } = null;
     }
 
     /// <summary>
-    /// Keystore types available.
+    /// Mirrors the variants of holochain_conductor_api's KeystoreConfig enum (Holochain 0.6.1).
     /// </summary>
-    public enum KeystoreType
-    {
-        FileSystem,
-        Memory,
-        Database,
-        HSM,
-        Cloud
-    }
-
-    /// <summary>
-    /// HSM configuration for hardware security modules.
-    /// </summary>
-    public class HSMConfig
+    public enum KeystoreConfigType
     {
         /// <summary>
-        /// HSM provider name.
+        /// Uses a test keystore instead of lair, generating publicly accessible private keys.
+        /// DO NOT USE IN PRODUCTION - mirrors Rust's DangerTestKeystore variant.
         /// </summary>
-        public string Provider { get; set; } = "";
+        DangerTestKeystore,
 
         /// <summary>
-        /// HSM slot number.
+        /// Connect to an external lair-keystore process via ConnectionUrl.
         /// </summary>
-        public int Slot { get; set; } = 0;
+        LairServer,
 
         /// <summary>
-        /// HSM PIN for authentication.
+        /// Run a lair-keystore server in-process, optionally rooted at LairRoot.
         /// </summary>
-        public string PIN { get; set; } = "";
-
-        /// <summary>
-        /// HSM certificate label.
-        /// </summary>
-        public string CertificateLabel { get; set; } = "";
-
-        /// <summary>
-        /// HSM private key label.
-        /// </summary>
-        public string PrivateKeyLabel { get; set; } = "";
-    }
-
-    /// <summary>
-    /// Key generation configuration.
-    /// </summary>
-    public class KeyGenerationConfig
-    {
-        /// <summary>
-        /// Key algorithm to use.
-        /// </summary>
-        public string Algorithm { get; set; } = "ed25519";
-
-        /// <summary>
-        /// Key size in bits.
-        /// </summary>
-        public int KeySize { get; set; } = 256;
-
-        /// <summary>
-        /// Enable deterministic key generation.
-        /// </summary>
-        public bool EnableDeterministic { get; set; } = true;
-
-        /// <summary>
-        /// Seed for deterministic key generation.
-        /// </summary>
-        public string Seed { get; set; } = "";
-
-        /// <summary>
-        /// Enable key derivation from master key.
-        /// </summary>
-        public bool EnableKeyDerivation { get; set; } = true;
-
-        /// <summary>
-        /// Key derivation path.
-        /// </summary>
-        public string DerivationPath { get; set; } = "m/44'/0'/0'/0";
-    }
-
-    /// <summary>
-    /// Key storage configuration.
-    /// </summary>
-    public class KeyStorageConfig
-    {
-        /// <summary>
-        /// Storage type for keys.
-        /// </summary>
-        public KeyStorageType Type { get; set; } = KeyStorageType.Encrypted;
-
-        /// <summary>
-        /// Enable key compression.
-        /// </summary>
-        public bool EnableCompression { get; set; } = true;
-
-        /// <summary>
-        /// Enable key indexing.
-        /// </summary>
-        public bool EnableIndexing { get; set; } = true;
-
-        /// <summary>
-        /// Maximum key age in days.
-        /// </summary>
-        public int MaxKeyAgeDays { get; set; } = 365;
-
-        /// <summary>
-        /// Enable key archival.
-        /// </summary>
-        public bool EnableArchival { get; set; } = true;
-
-        /// <summary>
-        /// Archive path for old keys.
-        /// </summary>
-        public string ArchivePath { get; set; } = "";
-    }
-
-    /// <summary>
-    /// Key storage types available.
-    /// </summary>
-    public enum KeyStorageType
-    {
-        Plain,
-        Encrypted,
-        Compressed,
-        Indexed
+        LairServerInProc
     }
 }

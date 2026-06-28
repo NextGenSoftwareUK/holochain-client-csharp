@@ -152,7 +152,21 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
     public class NetworkStatsDumpedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
     {
+        /// <summary>
+        /// Raw JSON escape hatch, as returned directly by the Holochain conductor's
+        /// `dump_network_stats` admin call (AdminResponse::NetworkStatsDumped(String)).
+        /// Kept for backwards compatibility / in case the typed NetworkStats below fails to
+        /// parse a future/older conductor's exact JSON shape.
+        /// </summary>
         public string NetworkStatsDumpJSON { get; set; }
+
+        /// <summary>
+        /// Typed representation of <see cref="NetworkStatsDumpJSON"/>, parsed into the
+        /// kitsune2_api::transport::TransportStats shape (Holochain 0.6.1). Will be null if the
+        /// JSON could not be parsed into this shape (see RawJSONData/NetworkStatsDumpJSON for
+        /// the raw data in that case).
+        /// </summary>
+        public DumpNetworkStatsResponse NetworkStats { get; set; }
     }
 
     public class RecordsGraftedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
@@ -163,5 +177,37 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
     public class AdminInterfacesAddedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
     {
 
+    }
+
+    // New in Holochain 0.6.1 - Admin API.
+
+    public class ZomeCallCapabilityRevokedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+
+    }
+
+    public class CapabilityGrantsListedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+        public List<CellCapGrantInfo> CapGrants { get; set; } = new List<CellCapGrantInfo>();
+    }
+
+    public class PeerMetaInfoReturnedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+        public PeerMetaInfoResponse PeerMetaInfo { get; set; }
+    }
+
+    public class AppAuthenticationTokenIssuedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+        public AppAuthenticationTokenIssuedResponse TokenIssued { get; set; }
+    }
+
+    public class AppAuthenticationTokenRevokedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+
+    }
+
+    public class CompatibleCellsReturnedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+        public List<AppCompatibleCells> CompatibleCells { get; set; } = new List<AppCompatibleCells>();
     }
 }

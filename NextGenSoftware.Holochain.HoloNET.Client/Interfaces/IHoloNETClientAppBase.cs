@@ -15,6 +15,36 @@ namespace NextGenSoftware.Holochain.HoloNET.Client.Interfaces
         event HoloNETClientAppBase.SignalCallBack OnSignalCallBack;
         event HoloNETClientAppBase.ZomeFunctionCallBack OnZomeFunctionCallBack;
 
+        // New in Holochain 0.6.1 - App API.
+        event HoloNETClientAppBase.CloneCellCreatedCallBack OnCloneCellCreatedCallBack;
+        event HoloNETClientAppBase.CloneCellEnabledCallBack OnCloneCellEnabledCallBack;
+        event HoloNETClientAppBase.CloneCellDisabledCallBack OnCloneCellDisabledCallBack;
+        event HoloNETClientAppBase.CountersigningSessionStateReturnedCallBack OnCountersigningSessionStateReturnedCallBack;
+        event HoloNETClientAppBase.CountersigningSessionAbandonedCallBack OnCountersigningSessionAbandonedCallBack;
+        event HoloNETClientAppBase.PublishCountersigningSessionTriggeredCallBack OnPublishCountersigningSessionTriggeredCallBack;
+        event HoloNETClientAppBase.WasmHostFunctionsListedCallBack OnWasmHostFunctionsListedCallBack;
+        event HoloNETClientAppBase.MemproofsProvidedCallBack OnMemproofsProvidedCallBack;
+        event HoloNETClientAppBase.AppPeerMetaInfoReturnedCallBack OnAppPeerMetaInfoReturnedCallBack;
+
+        CloneCellCreatedCallBackEventArgs CreateCloneCell(string roleName, dynamic modifiers = null, byte[] membraneProof = null, string name = null, string id = null);
+        Task<CloneCellCreatedCallBackEventArgs> CreateCloneCellAsync(string roleName, dynamic modifiers = null, byte[] membraneProof = null, string name = null, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+        CloneCellEnabledCallBackEventArgs EnableCloneCell(dynamic cloneCellId, string id = null);
+        Task<CloneCellEnabledCallBackEventArgs> EnableCloneCellAsync(dynamic cloneCellId, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+        CloneCellDisabledCallBackEventArgs DisableCloneCell(dynamic cloneCellId, string id = null);
+        Task<CloneCellDisabledCallBackEventArgs> DisableCloneCellAsync(dynamic cloneCellId, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+        CountersigningSessionStateReturnedCallBackEventArgs GetCountersigningSessionState(CellId cellId, string id = null);
+        Task<CountersigningSessionStateReturnedCallBackEventArgs> GetCountersigningSessionStateAsync(CellId cellId, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+        CountersigningSessionAbandonedCallBackEventArgs AbandonCountersigningSession(CellId cellId, string id = null);
+        Task<CountersigningSessionAbandonedCallBackEventArgs> AbandonCountersigningSessionAsync(CellId cellId, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+        PublishCountersigningSessionTriggeredCallBackEventArgs PublishCountersigningSession(CellId cellId, string id = null);
+        Task<PublishCountersigningSessionTriggeredCallBackEventArgs> PublishCountersigningSessionAsync(CellId cellId, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+        WasmHostFunctionsListedCallBackEventArgs ListWasmHostFunctions(string id = null);
+        Task<WasmHostFunctionsListedCallBackEventArgs> ListWasmHostFunctionsAsync(ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+        MemproofsProvidedCallBackEventArgs ProvideMemproofs(Dictionary<string, byte[]> membraneProofs, string id = null);
+        Task<MemproofsProvidedCallBackEventArgs> ProvideMemproofsAsync(Dictionary<string, byte[]> membraneProofs, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+        AppPeerMetaInfoReturnedCallBackEventArgs GetAppPeerMetaInfo(string url, List<byte[]> dnaHashes = null, string id = null);
+        Task<AppPeerMetaInfoReturnedCallBackEventArgs> GetAppPeerMetaInfoAsync(string url, List<byte[]> dnaHashes = null, ConductorResponseCallBackMode conductorResponseCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, string id = null);
+
         ZomeFunctionCallBackEventArgs CallZomeFunction(string zome, string function, object paramsObject);
         ZomeFunctionCallBackEventArgs CallZomeFunction(string zome, string function, object paramsObject, bool cachReturnData = false, ConductorResponseCallBackMode zomeResultCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse);
         ZomeFunctionCallBackEventArgs CallZomeFunction(string zome, string function, object paramsObject, ConductorResponseCallBackMode zomeResultCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse);
@@ -39,7 +69,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client.Interfaces
         Task<ZomeFunctionCallBackEventArgs> CallZomeFunctionAsync(string id, string zome, string function, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false, Type entryDataObjectTypeReturnedFromZome = null, ConductorResponseCallBackMode zomeResultCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse);
         Task<ZomeFunctionCallBackEventArgs> CallZomeFunctionAsync(string id, string zome, string function, object paramsObject, dynamic entryDataObjectReturnedFromZome = null, ConductorResponseCallBackMode zomeResultCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse);
         Task<ZomeFunctionCallBackEventArgs> CallZomeFunctionAsync(string id, string zome, string function, object paramsObject, Type entryDataObjectTypeReturnedFromZome = null, ConductorResponseCallBackMode zomeResultCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse);
-        Task<ZomeFunctionCallBackEventArgs> CallZomeFunctionAsync(string id, string zome, string function, HoloNETClientAppBase.ZomeFunctionCallBack callback, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false, ConductorResponseCallBackMode zomeResultCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse);
+        Task<ZomeFunctionCallBackEventArgs> CallZomeFunctionAsync(string id, string zome, string function, HoloNETClientAppBase.ZomeFunctionCallBack callback, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false, ConductorResponseCallBackMode zomeResultCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse, CallZomeOptions callZomeOptions = null);
         Task<ZomeFunctionCallBackEventArgs> CallZomeFunctionAsync(string id, string zome, string function, HoloNETClientAppBase.ZomeFunctionCallBack callback, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false, dynamic entryDataObjectReturnedFromZome = null, ConductorResponseCallBackMode zomeResultCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse);
         Task<ZomeFunctionCallBackEventArgs> CallZomeFunctionAsync(string id, string zome, string function, HoloNETClientAppBase.ZomeFunctionCallBack callback, object paramsObject, bool matchIdToZomeFuncInCallback = true, bool cachReturnData = false, Type entryDataObjectTypeReturnedFromZome = null, ConductorResponseCallBackMode zomeResultCallBackMode = ConductorResponseCallBackMode.WaitForHolochainConductorResponse);
         Task<ZomeFunctionCallBackEventArgs> CallZomeFunctionAsync(string zome, string function, HoloNETClientAppBase.ZomeFunctionCallBack callback, object paramsObject);

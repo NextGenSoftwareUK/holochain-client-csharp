@@ -30,5 +30,26 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         AdminDumpNetworkMetrics,
         AdminGraftRecords,
         AdminAddAdminInterfaces,
+
+        // New in Holochain 0.6.1 - Admin API (verified against
+        // holochain_conductor_api::admin_interface::AdminRequest at tag holochain-0.6.1)
+        AdminRevokeZomeCallCapability,
+        AdminListCapabilityGrants,
+        AdminPeerMetaInfo,
+        AdminIssueAppAuthenticationToken,
+        AdminRevokeAppAuthenticationToken,
+        AdminGetCompatibleCells,
+
+        // New in Holochain 0.6.1 - App API (verified against
+        // holochain_conductor_api::app_interface::AppRequest at tag holochain-0.6.1)
+        AppCreateCloneCell,
+        AppEnableCloneCell,
+        AppDisableCloneCell,
+        AppGetCountersigningSessionState,
+        AppAbandonCountersigningSession,
+        AppPublishCountersigningSession,
+        AppListWasmHostFunctions,
+        AppProvideMemproofs,
+        AppPeerMetaInfo,
     }
 }

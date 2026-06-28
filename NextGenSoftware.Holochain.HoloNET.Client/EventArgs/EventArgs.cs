@@ -165,4 +165,51 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         public string RawJSONData { get; set; }
         public WebSocketReceiveResult WebSocketResult { get; set; }
     }
+
+    // New in Holochain 0.6.1 - App API.
+
+    public class CloneCellCreatedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+        public ClonedCellResponse ClonedCell { get; set; }
+    }
+
+    public class CloneCellEnabledCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+        public ClonedCellResponse ClonedCell { get; set; }
+    }
+
+    public class CloneCellDisabledCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+
+    }
+
+    public class CountersigningSessionStateReturnedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+        public CountersigningSessionStateResponse SessionState { get; set; }
+    }
+
+    public class CountersigningSessionAbandonedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+
+    }
+
+    public class PublishCountersigningSessionTriggeredCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+
+    }
+
+    public class WasmHostFunctionsListedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+        public List<string> WasmHostFunctions { get; set; } = new List<string>();
+    }
+
+    public class MemproofsProvidedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+
+    }
+
+    public class AppPeerMetaInfoReturnedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+        public PeerMetaInfoResponse PeerMetaInfo { get; set; }
+    }
 }

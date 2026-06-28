@@ -10,6 +10,11 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         //[Key("provenance")]
         public byte[] provenance;
 
+        // CellId is a Rust tuple struct (DnaHash, AgentPubKey). These two fields are kept
+        // separate here (rather than a nested CellId object) only because the native
+        // holochain_serialisation_wrapper.dll P/Invoke signature (ZomeCallUnsignedRaw below)
+        // expects flat byte* fields - the dna_hash/agent_pub_key pair together represent the
+        // CellId tuple per holochain_zome_types::cell::CellId.
         //[Key("cell_id_dna_hash")]
         public byte[] cell_id_dna_hash;
 

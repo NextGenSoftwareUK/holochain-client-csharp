@@ -138,6 +138,8 @@ This will help massively turbo charge the holochain ecosystem by opening it up t
 
 **We are a BIG fan of Holochain and are very passionate about it and see a BIG future for it! We feel this is the gateway to taking Holochain mainstream! ;-)**
 
+**Holochain Compatibility:** HoloNET's wire protocol (zome call signing shape, admin/app interface message types, conductor config) targets **Holochain 0.6.1**, verified directly against the real Rust source in the [holochain](https://github.com/holochain/holochain) repo at tag `holochain-0.6.1` (crates `holochain_conductor_api`, `holochain_types`, `holochain_zome_types`). See [CHANGELOG.md](CHANGELOG.md) for details of what changed in the 0.6.1 upgrade.
+
 There are two versions of HoloNET:
 
 [NextGenSoftware.Holochain.HoloNET.Client](https://www.nuget.org/packages/NextGenSoftware.Holochain.HoloNET.Client) - Lightweight version that does not come with the holochain binaries (hc.exe and holochain.exe).

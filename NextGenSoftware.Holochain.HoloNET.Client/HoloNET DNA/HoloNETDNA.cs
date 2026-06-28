@@ -214,57 +214,52 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         /// </summary>
         public ErrorHandlingBehaviour ErrorHandlingBehaviour { get; set; } = ErrorHandlingBehaviour.OnlyThrowExceptionIfNoErrorHandlerSubscribedToOnErrorEvent;
 
-        // Holochain 0.5.6+ Enhanced Features
-
         /// <summary>
-        /// Enable Kitsune2 networking for enhanced P2P communication. Default is true.
+        /// Network configuration mirroring Holochain 0.6.1's ConductorConfig.network
+        /// (holochain_conductor_api::config::conductor::NetworkConfig). As of 0.6.1,
+        /// request_timeout_s lives here rather than directly on ConductorConfig.
+        /// See: https://github.com/holochain/holochain/blob/holochain-0.6.1/crates/holochain_conductor_api/src/config/conductor.rs
         /// </summary>
-        public bool EnableKitsune2Networking { get; set; } = true;
+        public NetworkConfig NetworkConfig { get; set; } = new NetworkConfig();
 
         /// <summary>
-        /// Enable QUIC protocol for enhanced transport layer performance. Default is true.
-        /// </summary>
-        public bool EnableQUICProtocol { get; set; } = true;
-
-        /// <summary>
-        /// Enable integrated keystore for secure key management. Default is true.
-        /// </summary>
-        public bool EnableIntegratedKeystore { get; set; } = true;
-
-        /// <summary>
-        /// Enable caching layer to reduce network queries. Default is true.
-        /// </summary>
-        public bool EnableCachingLayer { get; set; } = true;
-
-        /// <summary>
-        /// Enable WASM optimization for better performance. Default is true.
-        /// </summary>
-        public bool EnableWASMOptimization { get; set; } = true;
-
-        /// <summary>
-        /// Kitsune2 network configuration for P2P networking.
+        /// Kitsune2 networking sub-fields of ConductorConfig.network not already covered by
+        /// NetworkConfig above (bootstrap/signal/relay URLs, webrtc_config, target_arc_factor,
+        /// advanced kitsune2 JSON). See Kitsune2Config.cs for verification details. Not yet wired
+        /// through to any websocket/conductor call - present in the object graph only.
         /// </summary>
         public Kitsune2Config Kitsune2Config { get; set; } = new Kitsune2Config();
 
         /// <summary>
-        /// QUIC protocol configuration for enhanced transport.
+        /// QUIC transport configuration. NOT VERIFIED - no client-facing QUIC tuning surface was
+        /// found in holochain_conductor_api as of 0.6.1; see QUICConfig.cs for details. Kept as a
+        /// placeholder only; has no effect on conductor behaviour.
         /// </summary>
         public QUICConfig QUICConfig { get; set; } = new QUICConfig();
 
         /// <summary>
-        /// Integrated keystore configuration for secure key management.
+        /// Keystore connection configuration, mirroring holochain_conductor_api's KeystoreConfig
+        /// (DangerTestKeystore / LairServer / LairServerInProc). See KeystoreConfig.cs. Not yet
+        /// wired through to the actual conductor config file/admin API generation - present in the
+        /// object graph only; wiring it would require generating/writing the conductor's YAML
+        /// config or a future admin API call, which is out of scope here.
         /// </summary>
         public KeystoreConfig KeystoreConfig { get; set; } = new KeystoreConfig();
 
         /// <summary>
-        /// Caching layer configuration for performance optimization.
-        /// </summary>
-        public CacheConfig CacheConfig { get; set; } = new CacheConfig();
-
-        /// <summary>
-        /// WASM optimization configuration for better performance.
+        /// WASM-related configuration. NOT VERIFIED - no client-facing wasm compilation/runtime
+        /// tuning surface was found in holochain_conductor_api as of 0.6.1; see WASMConfig.cs for
+        /// details. Kept as a placeholder only; has no effect on conductor behaviour.
         /// </summary>
         public WASMConfig WASMConfig { get; set; } = new WASMConfig();
+
+        /// <summary>
+        /// HoloNET client-side cache configuration. This is a HoloNET-specific concept, not a
+        /// mirror of any Holochain Rust struct - see CacheConfig.cs. Not yet consumed by any
+        /// caching implementation in HoloNET; present in the object graph only, ready for a future
+        /// client-side cache layer to read from.
+        /// </summary>
+        public CacheConfig CacheConfig { get; set; } = new CacheConfig();
 
         //34 settings :)
 
