@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using MessagePack;
 using NextGenSoftware.Logging;
@@ -36,7 +36,8 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
             catch (Exception ex)
             {
                 string msg = "Error in HoloNETClient.ProcessDataReceived method.";
-                HandleError(msg, ex);
+                //HandleError(msg, ex); // could throw and skip completing the call
+                ReportError(msg, ex);
             }
 
             return response;
@@ -180,7 +181,13 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                         break;
 
                     case "agent_info":
-                        response.HoloNETResponseType = HoloNETResponseType.AdminAgentInfoReturned;
+                        //response.HoloNETResponseType = HoloNETResponseType.AdminAgentInfoReturned;
+                        // Both interfaces answer agent_info (Holochain 0.7 added it to the app interface).
+                        response.HoloNETResponseType = this is HoloNETClientAdmin ? HoloNETResponseType.AdminAgentInfoReturned : HoloNETResponseType.AppAgentInfoReturned;
+                        break;
+
+                    case "conductor_state_dumped":
+                        response.HoloNETResponseType = HoloNETResponseType.AdminConductorStateDumped;
                         break;
 
                     case "agent_info_added":
@@ -204,11 +211,13 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                         break;
 
                     case "network_metrics_dumped":
-                        response.HoloNETResponseType = HoloNETResponseType.AdminNetworkMetricsDumped;
+                        //response.HoloNETResponseType = HoloNETResponseType.AdminNetworkMetricsDumped;
+                        response.HoloNETResponseType = this is HoloNETClientAdmin ? HoloNETResponseType.AdminNetworkMetricsDumped : HoloNETResponseType.AppNetworkMetricsDumped;
                         break;
 
                     case "network_stats_dumped":
-                        response.HoloNETResponseType = HoloNETResponseType.AdminNetworkStatsDumped;
+                        //response.HoloNETResponseType = HoloNETResponseType.AdminNetworkStatsDumped;
+                        response.HoloNETResponseType = this is HoloNETClientAdmin ? HoloNETResponseType.AdminNetworkStatsDumped : HoloNETResponseType.AppNetworkStatsDumped;
                         break;
 
                     // AdminResponse::StorageInfo serialises as "storage_info"; kept the old name too.
@@ -298,7 +307,17 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                     // AppMemproofsProvided here. If other Ok-returning AppRequest methods are wired
                     // up in future, this mapping will need to become request-id aware instead.
                     case "ok":
-                        response.HoloNETResponseType = HoloNETResponseType.AppMemproofsProvided;
+                        //response.HoloNETResponseType = HoloNETResponseType.AppMemproofsProvided;
+                        // Generic Ok: route by the request that asked for it (send_direct_signal or provide_memproofs).
+                        // AppResponse::Ok answers provide_memproofs, send_direct_signal and enable_app.
+                        _requestTypeLookup.TryGetValue(response.id.ToString(), out HoloNETRequestType okRequest);
+                        response.HoloNETResponseType = okRequest == HoloNETRequestType.AppSendDirectSignal ? HoloNETResponseType.AppDirectSignalSent
+                            : okRequest == HoloNETRequestType.AppEnableApp ? HoloNETResponseType.AppEnabledViaAppInterface
+                            : HoloNETResponseType.AppMemproofsProvided;
+                        break;
+
+                    case "direct_signal_capability_granted":
+                        response.HoloNETResponseType = this is HoloNETClientAdmin ? HoloNETResponseType.AdminDirectSignalCapabilityGranted : HoloNETResponseType.AppDirectSignalCapabilityGranted;
                         break;
 
                     case "error":
@@ -329,7 +348,8 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                 holoNETDataReceivedEventArgs.IsError = true;
                 holoNETDataReceivedEventArgs.Message = msg;
                 //holoNETDataReceivedEventArgs.IsCallSuccessful = false;
-                HandleError(msg, ex);
+                //HandleError(msg, ex); // could throw and skip completing the call
+                ReportError(msg, ex);
             }
 
             OnDataReceived?.Invoke(this, holoNETDataReceivedEventArgs);

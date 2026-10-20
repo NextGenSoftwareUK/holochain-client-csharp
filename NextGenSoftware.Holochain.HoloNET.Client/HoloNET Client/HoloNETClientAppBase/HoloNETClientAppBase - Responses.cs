@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Reflection;
@@ -31,7 +31,42 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         /// <returns></returns>
         public dynamic MapEntryDataObject(Type entryDataObjectType, Dictionary<string, string> keyValuePairs, bool cacheEntryDataObjectPropertyInfo = true)
         {
-            return Task.Run(() => MapEntryDataObjectAsync(entryDataObjectType, keyValuePairs, cacheEntryDataObjectPropertyInfo)).Result;
+            //return Task.Run(() => MapEntryDataObjectAsync(entryDataObjectType, keyValuePairs, cacheEntryDataObjectPropertyInfo)).Result; // .Result wraps errors in AggregateException
+            return Task.Run(() => MapEntryDataObjectAsync(entryDataObjectType, keyValuePairs, cacheEntryDataObjectPropertyInfo)).GetAwaiter().GetResult();
+        }
+
+        /// <summary>Formats a decoded msgpack value with the invariant culture ("null" for null), so ConvertEntryValue round-trips it.</summary>
+        public static string ToInvariantString(object value) =>
+            value == null ? "null" : value is IFormattable formattable ? formattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture) : value.ToString();
+
+        /// <summary>
+        /// Converts a decoded entry value (see DecodeRawZomeData, which formats with the invariant culture) to
+        /// <paramref name="type"/>: nullable types, enums (by name or number), Guid, DateTime / DateTimeOffset and every
+        /// IConvertible type. Unconvertible values throw, and MapEntryDataObjectAsync skips that property.
+        /// </summary>
+        public static object ConvertEntryValue(string value, Type type)
+        {
+            Type target = Nullable.GetUnderlyingType(type) ?? type;
+
+            if (value == null || (value == "null" && target != typeof(string)))
+                return type.IsValueType && Nullable.GetUnderlyingType(type) == null ? Activator.CreateInstance(type) : null;
+
+            if (target == typeof(string))
+                return value;
+
+            if (target == typeof(Guid))
+                return Guid.Parse(value);
+
+            if (target == typeof(DateTime))
+                return DateTime.Parse(value, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind);
+
+            if (target == typeof(DateTimeOffset))
+                return DateTimeOffset.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+
+            if (target.IsEnum)
+                return Enum.Parse(target, value, true);
+
+            return Convert.ChangeType(value, target, System.Globalization.CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -75,53 +110,57 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                                     {
                                         string key = data.ConstructorArguments[0].Value.ToString();
 
-                                        if (propInfo.PropertyType == typeof(Guid))
-                                            propInfo.SetValue(entryDataObject, new Guid(keyValuePairs[key]));
+                                        // The chain above set float properties from a double (rejected by reflection), and failed for nullable
+                                        // and enum properties and with non-English number formats; every failure was silently skipped.
+//                                        if (propInfo.PropertyType == typeof(Guid))
+//                                            propInfo.SetValue(entryDataObject, new Guid(keyValuePairs[key]));
 
-                                        else if (propInfo.PropertyType == typeof(bool))
-                                            propInfo.SetValue(entryDataObject, Convert.ToBoolean(keyValuePairs[key]));
+//                                        else if (propInfo.PropertyType == typeof(bool))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToBoolean(keyValuePairs[key]));
 
-                                        else if (propInfo.PropertyType == typeof(DateTime))
-                                            propInfo.SetValue(entryDataObject, Convert.ToDateTime(keyValuePairs[key]));
+//                                        else if (propInfo.PropertyType == typeof(DateTime))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToDateTime(keyValuePairs[key]));
 
-                                        else if (propInfo.PropertyType == typeof(int))
-                                            propInfo.SetValue(entryDataObject, Convert.ToInt32(keyValuePairs[key]));
+//                                        else if (propInfo.PropertyType == typeof(int))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToInt32(keyValuePairs[key]));
 
-                                        else if (propInfo.PropertyType == typeof(long))
-                                            propInfo.SetValue(entryDataObject, Convert.ToInt64(keyValuePairs[key]));
+//                                        else if (propInfo.PropertyType == typeof(long))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToInt64(keyValuePairs[key]));
 
-                                        else if (propInfo.PropertyType == typeof(float))
-                                            propInfo.SetValue(entryDataObject, Convert.ToDouble(keyValuePairs[key])); //TODO: Check if this is right?! :)
+//                                        else if (propInfo.PropertyType == typeof(float))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToDouble(keyValuePairs[key])); //TODO: Check if this is right?! :)
 
-                                        else if (propInfo.PropertyType == typeof(double))
-                                            propInfo.SetValue(entryDataObject, Convert.ToDouble(keyValuePairs[key]));
+//                                        else if (propInfo.PropertyType == typeof(double))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToDouble(keyValuePairs[key]));
 
-                                        else if (propInfo.PropertyType == typeof(decimal))
-                                            propInfo.SetValue(entryDataObject, Convert.ToDecimal(keyValuePairs[key]));
+//                                        else if (propInfo.PropertyType == typeof(decimal))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToDecimal(keyValuePairs[key]));
 
-                                        else if (propInfo.PropertyType == typeof(UInt16))
-                                            propInfo.SetValue(entryDataObject, Convert.ToUInt16(keyValuePairs[key]));
+//                                        else if (propInfo.PropertyType == typeof(UInt16))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToUInt16(keyValuePairs[key]));
 
-                                        else if (propInfo.PropertyType == typeof(UInt32))
-                                            propInfo.SetValue(entryDataObject, Convert.ToUInt32(keyValuePairs[key]));
+//                                        else if (propInfo.PropertyType == typeof(UInt32))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToUInt32(keyValuePairs[key]));
 
-                                        else if (propInfo.PropertyType == typeof(UInt64))
-                                            propInfo.SetValue(entryDataObject, Convert.ToUInt64(keyValuePairs[key]));
+//                                        else if (propInfo.PropertyType == typeof(UInt64))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToUInt64(keyValuePairs[key]));
 
-                                        else if (propInfo.PropertyType == typeof(Single))
-                                            propInfo.SetValue(entryDataObject, Convert.ToSingle(keyValuePairs[key]));
+//                                        else if (propInfo.PropertyType == typeof(Single))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToSingle(keyValuePairs[key]));
 
-                                        else if (propInfo.PropertyType == typeof(char))
-                                            propInfo.SetValue(entryDataObject, Convert.ToChar(keyValuePairs[key]));
+//                                        else if (propInfo.PropertyType == typeof(char))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToChar(keyValuePairs[key]));
 
-                                        else if (propInfo.PropertyType == typeof(byte))
-                                            propInfo.SetValue(entryDataObject, Convert.ToByte(keyValuePairs[key]));
+//                                        else if (propInfo.PropertyType == typeof(byte))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToByte(keyValuePairs[key]));
 
-                                        else if (propInfo.PropertyType == typeof(sbyte))
-                                            propInfo.SetValue(entryDataObject, Convert.ToSByte(keyValuePairs[key]));
+//                                        else if (propInfo.PropertyType == typeof(sbyte))
+//                                            propInfo.SetValue(entryDataObject, Convert.ToSByte(keyValuePairs[key]));
 
-                                        else
-                                            propInfo.SetValue(entryDataObject, keyValuePairs[key]);
+//                                        else
+//                                            propInfo.SetValue(entryDataObject, keyValuePairs[key]);
+                                        if (keyValuePairs.TryGetValue(key, out string rawValue))
+                                            propInfo.SetValue(entryDataObject, ConvertEntryValue(rawValue, propInfo.PropertyType));
 
                                         break;
                                     }
@@ -152,7 +191,11 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         /// <returns></returns>
         public dynamic MapEntryDataObject(dynamic entryDataObject, Dictionary<string, string> keyValuePairs, bool cacheEntryDataObjectPropertyInfos = true)
         {
-            return Task.Run(() => MapEntryDataObjectAsync(entryDataObject, keyValuePairs, cacheEntryDataObjectPropertyInfos)).Result;
+            //return Task.Run(() => MapEntryDataObjectAsync(entryDataObject, keyValuePairs, cacheEntryDataObjectPropertyInfos)).Result; // .Result wraps errors in AggregateException
+            //return Task.Run(() => MapEntryDataObjectAsync(entryDataObject, keyValuePairs, cacheEntryDataObjectPropertyInfos)).GetAwaiter().GetResult();
+            // With a dynamic argument the lambda returned the Task itself, so the "mapped object" was a Task<object>.
+            object entry = entryDataObject;
+            return Task.Run(() => (Task<dynamic>)MapEntryDataObjectAsync(entry, keyValuePairs, cacheEntryDataObjectPropertyInfos)).GetAwaiter().GetResult();
         }
 
         protected override IHoloNETResponse ProcessDataReceived(WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
@@ -207,6 +250,45 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                             DecodeWasmHostFunctionsListedReceived(response, dataReceivedEventArgs);
                             break;
 
+                        case HoloNETResponseType.AppAgentInfoReturned:
+                            {
+                                var args = DecodeUnit<AgentInfoReturnedCallBackEventArgs>(response, dataReceivedEventArgs, HoloNETResponseType.AppAgentInfoReturned, "APP: AGENT INFO RETURNED");
+                                try { args.AgentInfos = DeserializeResponseValue<List<string>>(response.data) ?? new List<string>(); }
+                                catch (Exception ex) { HandleError(args, $"An unknown error occurred decoding app agent_info. Reason: {ex}"); }
+                                RaiseAppEvent(args, OnAgentInfoReturnedCallBack, _taskCompletionAgentInfoReturnedCallBack, "AppAgentInfoReturned");
+                            }
+                            break;
+
+                        case HoloNETResponseType.AppNetworkMetricsDumped:
+                            {
+                                var args = DecodeUnit<NetworkMetricsDumpedCallBackEventArgs>(response, dataReceivedEventArgs, HoloNETResponseType.AppNetworkMetricsDumped, "APP: NETWORK METRICS DUMPED");
+                                try { args.NetworkMetricsDumpJSON = DeserializeResponseValueAsJson(response.data); }
+                                catch (Exception ex) { HandleError(args, $"An unknown error occurred decoding app network metrics. Reason: {ex}"); }
+                                RaiseAppEvent(args, OnNetworkMetricsDumpedCallBack, _taskCompletionNetworkMetricsDumpedCallBack, "AppNetworkMetricsDumped");
+                            }
+                            break;
+
+                        case HoloNETResponseType.AppNetworkStatsDumped:
+                            {
+                                var args = DecodeUnit<NetworkStatsDumpedCallBackEventArgs>(response, dataReceivedEventArgs, HoloNETResponseType.AppNetworkStatsDumped, "APP: NETWORK STATS DUMPED");
+                                try { args.NetworkStatsDumpJSON = DeserializeResponseValueAsJson(response.data); }
+                                catch (Exception ex) { HandleError(args, $"An unknown error occurred decoding app network stats. Reason: {ex}"); }
+                                RaiseAppEvent(args, OnNetworkStatsDumpedCallBack, _taskCompletionNetworkStatsDumpedCallBack, "AppNetworkStatsDumped");
+                            }
+                            break;
+
+                        case HoloNETResponseType.AppEnabledViaAppInterface:
+                            RaiseAppEvent(DecodeUnit<AppEnabledViaAppInterfaceCallBackEventArgs>(response, dataReceivedEventArgs, HoloNETResponseType.AppEnabledViaAppInterface, "APP: APP ENABLED"), OnAppEnabledCallBack, _taskCompletionAppEnabledCallBack, "AppEnabledViaAppInterface");
+                            break;
+
+                        case HoloNETResponseType.AppDirectSignalSent:
+                            RaiseDirectSignalSentEvent(DecodeUnit<DirectSignalSentCallBackEventArgs>(response, dataReceivedEventArgs, HoloNETResponseType.AppDirectSignalSent, "APP: DIRECT SIGNAL SENT"));
+                            break;
+
+                        case HoloNETResponseType.AppDirectSignalCapabilityGranted:
+                            RaiseDirectSignalCapabilityGrantedEvent(DecodeDirectSignalCapabilityGranted(response, dataReceivedEventArgs));
+                            break;
+
                         case HoloNETResponseType.AppMemproofsProvided:
                             DecodeMemproofsProvidedReceived(response, dataReceivedEventArgs);
                             break;
@@ -224,7 +306,8 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
             catch (Exception ex)
             {
                 string msg = "Error in HoloNETClient.ProcessDataReceived method.";
-                HandleError(msg, ex);
+                //HandleError(msg, ex); // could throw and skip completing the call
+                ReportError(msg, ex);
             }
 
             return response;
@@ -286,6 +369,30 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                         RaiseWasmHostFunctionsListedEvent(ProcessResponeError<WasmHostFunctionsListedCallBackEventArgs>(response, dataReceivedEventArgs, "AppListWasmHostFunctions", msg));
                         break;
 
+                    case HoloNETRequestType.AppAgentInfo:
+                        RaiseAppEvent(ProcessResponeError<AgentInfoReturnedCallBackEventArgs>(response, dataReceivedEventArgs, "AppAgentInfo", msg), OnAgentInfoReturnedCallBack, _taskCompletionAgentInfoReturnedCallBack, "AppAgentInfoReturned");
+                        break;
+
+                    case HoloNETRequestType.AppDumpNetworkMetrics:
+                        RaiseAppEvent(ProcessResponeError<NetworkMetricsDumpedCallBackEventArgs>(response, dataReceivedEventArgs, "AppDumpNetworkMetrics", msg), OnNetworkMetricsDumpedCallBack, _taskCompletionNetworkMetricsDumpedCallBack, "AppNetworkMetricsDumped");
+                        break;
+
+                    case HoloNETRequestType.AppDumpNetworkStats:
+                        RaiseAppEvent(ProcessResponeError<NetworkStatsDumpedCallBackEventArgs>(response, dataReceivedEventArgs, "AppDumpNetworkStats", msg), OnNetworkStatsDumpedCallBack, _taskCompletionNetworkStatsDumpedCallBack, "AppNetworkStatsDumped");
+                        break;
+
+                    case HoloNETRequestType.AppEnableApp:
+                        RaiseAppEvent(ProcessResponeError<AppEnabledViaAppInterfaceCallBackEventArgs>(response, dataReceivedEventArgs, "AppEnableApp", msg), OnAppEnabledCallBack, _taskCompletionAppEnabledCallBack, "AppEnabledViaAppInterface");
+                        break;
+
+                    case HoloNETRequestType.AppSendDirectSignal:
+                        RaiseDirectSignalSentEvent(ProcessResponeError<DirectSignalSentCallBackEventArgs>(response, dataReceivedEventArgs, "AppSendDirectSignal", msg));
+                        break;
+
+                    case HoloNETRequestType.AppGrantDirectSignalCapability:
+                        RaiseDirectSignalCapabilityGrantedEvent(ProcessResponeError<DirectSignalCapabilityGrantedCallBackEventArgs>(response, dataReceivedEventArgs, "AppGrantDirectSignalCapability", msg));
+                        break;
+
                     case HoloNETRequestType.AppProvideMemproofs:
                         RaiseMemproofsProvidedEvent(ProcessResponeError<MemproofsProvidedCallBackEventArgs>(response, dataReceivedEventArgs, "AppProvideMemproofs", msg));
                         break;
@@ -305,14 +412,16 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
         private void DecodeAppInfoDataReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
         {
-            AppInfoCallBackEventArgs args = new AppInfoCallBackEventArgs();
+            //AppInfoCallBackEventArgs args = new AppInfoCallBackEventArgs();
+            // Created first so the request id is set even if decoding fails (a malformed reply left GetAppInfoAsync hanging).
+            AppInfoCallBackEventArgs args = CreateHoloNETArgs<AppInfoCallBackEventArgs>(response, dataReceivedEventArgs);
             AppInfoResponse appInfoResponse = null;
 
             try
             {
                 Logger.Log("APP INFO RESPONSE DATA DETECTED\n", LogType.Info);
                 appInfoResponse = MessagePackSerializer.Deserialize<AppInfoResponse>(response.data, messagePackSerializerOptions);
-                args = CreateHoloNETArgs<AppInfoCallBackEventArgs>(response, dataReceivedEventArgs);
+                //args = CreateHoloNETArgs<AppInfoCallBackEventArgs>(response, dataReceivedEventArgs);
 
                 if (appInfoResponse != null)
                 {
@@ -340,7 +449,8 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                 {
                     args.Message = "Error occured in HoloNETClient.DecodeAppInfoDataReceived. appInfoResponse is null.";
                     args.IsError = true;
-                    HandleError(args.Message);
+                    //HandleError(args.Message); // could throw and skip completing the call
+                    ReportError(args.Message);
                 }
             }
             catch (Exception ex)
@@ -348,7 +458,8 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                 string msg = $"An unknown error occurred in HoloNETClient.DecodeAppInfoDataReceived. Reason: {ex}";
                 args.IsError = true;
                 args.Message = msg;
-                HandleError(msg, ex);
+                //HandleError(msg, ex); // could throw and skip completing the call
+                ReportError(msg, ex);
             }
 
             //If either the AgentPubKey or DnaHash is empty then attempt to get from the sandbox cmd.
@@ -358,7 +469,28 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                     SetReadyForZomeCalls(response.id.ToString());
 
                 else if (_automaticallyAttemptToGetFromSandboxIfConductorFails)
-                    RetrieveAgentPubKeyAndDnaHashFromSandbox();
+                {
+                    //RetrieveAgentPubKeyAndDnaHashFromSandbox();
+                    // Ran hc synchronously on the WebSocket receive thread, and with the default fallback back to the conductor
+                    // the two could call each other forever. Run it in the background and don't bounce back.
+                    string retrievalId = response.id.ToString();
+                    FireAndForget(Task.Run(async () =>
+                    {
+                        AgentPubKeyDnaHash fromSandbox = await RetrieveAgentPubKeyAndDnaHashFromSandboxAsync(_updateDnaHashAndAgentPubKey, false);
+                        if (_taskCompletionAgentPubKeyAndDnaHashRetrieved.TryGetValue(retrievalId, out TaskCompletionSource<AgentPubKeyDnaHash> waiting))
+                        {
+                            _taskCompletionAgentPubKeyAndDnaHashRetrieved.Remove(retrievalId);
+                            waiting.TrySetResult(fromSandbox);
+                        }
+                    }), "RetrieveAgentPubKeyAndDnaHashFromSandboxAsync");
+                }
+                else if (!string.IsNullOrEmpty(response.id.ToString()) && _taskCompletionAgentPubKeyAndDnaHashRetrieved.TryGetValue(response.id.ToString(), out TaskCompletionSource<AgentPubKeyDnaHash> noKeys))
+                {
+                    // app_info had no cell for this agent and there is no fallback: finish the retrieval rather than hang.
+                    _taskCompletionAgentPubKeyAndDnaHashRetrieved.Remove(response.id.ToString());
+                    RetrievingAgentPubKeyAndDnaHash = false;
+                    noKeys.TrySetResult(null);
+                }
             }
 
             RaiseAppInfoReceivedEvent(args);
@@ -385,17 +517,27 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
                     if (value?.signal != null && value.signal.Length > 0)
                     {
-                        object payload = MessagePackSerializer.Deserialize<object>(value.signal, messagePackSerializerOptions);
-
-                        if (payload is Dictionary<object, object> map)
+                        // A direct signal is opaque bytes chosen by the sender and needn't be msgpack; decoding it as msgpack
+                        // threw and turned the whole signal into an error. Fall back to the raw bytes.
+                        try
                         {
-                            foreach (var kv in map)
-                                signalDataDecoded[kv.Key.ToString()] = kv.Value;
-                        }
-                        else
-                            signalDataDecoded["value"] = payload;
+                            object payload = MessagePackSerializer.Deserialize<object>(value.signal, messagePackSerializerOptions);
 
-                        signalDataAsString = MessagePackSerializer.ConvertToJson(value.signal);
+                            if (payload is Dictionary<object, object> map)
+                            {
+                                foreach (var kv in map)
+                                    signalDataDecoded[kv.Key.ToString()] = kv.Value;
+                            }
+                            else
+                                signalDataDecoded["value"] = payload;
+
+                            signalDataAsString = MessagePackSerializer.ConvertToJson(value.signal);
+                        }
+                        catch (MessagePackSerializationException) when (variant == "app_direct")
+                        {
+                            signalDataDecoded["value"] = value.signal;
+                            signalDataAsString = Convert.ToBase64String(value.signal);
+                        }
                     }
 
                     signalCallBackEventArgs.DnaHash = value?.cell_id != null ? ConvertHoloHashToString(value.cell_id[0]) : "";
@@ -404,9 +546,17 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                     signalCallBackEventArgs.SignalData = signalDataDecoded;
                     signalCallBackEventArgs.SignalDataAsString = signalDataAsString;
                     signalCallBackEventArgs.SignalType = SignalType.App;
+                    signalCallBackEventArgs.IsDirectSignal = variant == "app_direct";
+                    signalCallBackEventArgs.FromAgentPubKey = value?.from_agent != null ? ConvertHoloHashToString(value.from_agent) : null;
                 }
                 else
+                {
                     signalCallBackEventArgs.SignalType = SignalType.System;
+                    // SystemSignal is adjacently tagged too: {"type": "system", "value": {"type": "<variant>", "value": ...}}.
+                    byte[] system = ReadRawValue(response.data);
+                    signalCallBackEventArgs.SystemSignalType = system == null ? null : ReadResponseType(system);
+                    signalCallBackEventArgs.SignalDataAsString = DeserializeResponseValueAsJson(response.data);
+                }
             }
             catch (Exception ex)
             {
@@ -415,7 +565,10 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
             // Ignore System signals — they carry no app-level data (mirrors the JS client behaviour).
             if (signalCallBackEventArgs.SignalType == SignalType.System && !signalCallBackEventArgs.IsError)
+            {
+                OnSystemSignalCallBack?.Invoke(this, signalCallBackEventArgs);
                 return;
+            }
 
             RaiseSignalReceivedEvent(signalCallBackEventArgs);
         }
@@ -423,7 +576,8 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         private void DecodeZomeDataReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
         {
             Logger.Log("ZOME RESPONSE DATA DETECTED\n", LogType.Info);
-            AppResponse appResponse = MessagePackSerializer.Deserialize<AppResponse>(response.data, messagePackSerializerOptions);
+            //AppResponse appResponse = MessagePackSerializer.Deserialize<AppResponse>(response.data, messagePackSerializerOptions); // outside any try: a malformed reply escaped the decoder and the zome call hung
+            AppResponse appResponse = null;
             string id = response.id.ToString();
             ZomeFunctionCallBackEventArgs zomeFunctionCallBackArgs = new ZomeFunctionCallBackEventArgs();
 
@@ -433,10 +587,33 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
             try
             {
+                appResponse = MessagePackSerializer.Deserialize<AppResponse>(response.data, messagePackSerializerOptions);
+            }
+            catch (Exception ex)
+            {
+                zomeFunctionCallBackArgs.IsError = true;
+                zomeFunctionCallBackArgs.Message = $"The zome call response could not be decoded. Reason: {ex.Message}";
+                Logger.Log(zomeFunctionCallBackArgs.Message, LogType.Error);
+                RaiseZomeDataReceivedEvent(zomeFunctionCallBackArgs);
+                return;
+            }
+
+            try
+            {
                 // ActionHash/EntryHash results (for example delete zome functions) are
                 // MessagePack binary values, not record maps. Decode them before trying
                 // the collection paths so a byte sequence is not mistaken for a list.
                 object scalarResponse = MessagePackSerializer.Deserialize<object>(appResponse.data, messagePackSerializerOptions);
+                zomeFunctionCallBackArgs.ZomeReturnValue = scalarResponse;
+
+                // (), bool, numbers and strings are normal zome return types; they used to fall through every
+                // collection path and be reported as "an unknown response".
+                if (scalarResponse == null || scalarResponse is string || scalarResponse is bool || scalarResponse.GetType().IsPrimitive)
+                {
+                    RaiseZomeDataReceivedEvent(zomeFunctionCallBackArgs);
+                    return;
+                }
+
                 if (scalarResponse is byte[] scalarHash)
                 {
                     zomeFunctionCallBackArgs.ZomeReturnHash = ConvertHoloHashToString(scalarHash);
@@ -630,12 +807,19 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
             try
             {
                 Logger.Log("APP: COUNTERSIGNING SESSION STATE RETURNED\n", LogType.Info);
-                CountersigningSessionStateResponse sessionStateResponse = DeserializeResponseValue<CountersigningSessionStateResponse>(response.data);
+                //CountersigningSessionStateResponse sessionStateResponse = DeserializeResponseValue<CountersigningSessionStateResponse>(response.data);
+                //if (sessionStateResponse != null)
+                //    args.SessionState = sessionStateResponse;
+                //else
+                //    HandleError(args, $"{errorMessage} sessionStateResponse failed to deserialize.");
 
-                if (sessionStateResponse != null)
-                    args.SessionState = sessionStateResponse;
-                else
-                    HandleError(args, $"{errorMessage} sessionStateResponse failed to deserialize.");
+                // The value is Option<CountersigningSessionState> itself (null = no session in progress), not a
+                // {session_state} object, so "no session" was reported as an error.
+                byte[] raw = ReadRawValue(response.data);
+                args.SessionState = new CountersigningSessionStateResponse
+                {
+                    session_state = raw == null ? null : MessagePackSerializer.Deserialize<object>(raw, messagePackSerializerOptions)
+                };
             }
             catch (Exception ex)
             {
@@ -679,6 +863,62 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
             }
 
             RaisePublishCountersigningSessionTriggeredEvent(args);
+        }
+
+        private T DecodeUnit<T>(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs, HoloNETResponseType responseType, string logMessage) where T : HoloNETDataReceivedBaseEventArgs, new()
+        {
+            T args = CreateHoloNETArgs<T>(response, dataReceivedEventArgs);
+            args.HoloNETResponseType = responseType;
+            Logger.Log(logMessage + "\n", LogType.Info);
+            return args;
+        }
+
+        private DirectSignalCapabilityGrantedCallBackEventArgs DecodeDirectSignalCapabilityGranted(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
+        {
+            var args = DecodeUnit<DirectSignalCapabilityGrantedCallBackEventArgs>(response, dataReceivedEventArgs, HoloNETResponseType.AppDirectSignalCapabilityGranted, "APP: DIRECT SIGNAL CAPABILITY GRANTED");
+            try
+            {
+                args.ActionHash = DeserializeResponseValue<byte[]>(response.data);
+            }
+            catch (Exception ex)
+            {
+                HandleError(args, $"An unknown error occurred in HoloNETClient.DecodeDirectSignalCapabilityGranted. Reason: {ex}");
+            }
+            return args;
+        }
+
+        /// <summary>Logs, raises <paramref name="handler"/> and completes the awaiting call for <paramref name="args"/>.Id.</summary>
+        private void RaiseAppEvent<T>(T args, Delegate handler, Dictionary<string, TaskCompletionSource<T>> completions, string name) where T : HoloNETDataReceivedBaseEventArgs
+        {
+            LogEvent(name, args);
+            handler?.DynamicInvoke(this, args);
+            if (!string.IsNullOrEmpty(args.Id) && completions.TryGetValue(args.Id, out var completion))
+            {
+                completion.TrySetResult(args);
+                completions.Remove(args.Id);
+            }
+        }
+
+        private void RaiseDirectSignalSentEvent(DirectSignalSentCallBackEventArgs args)
+        {
+            LogEvent("AppDirectSignalSent", args);
+            OnDirectSignalSentCallBack?.Invoke(this, args);
+            if (!string.IsNullOrEmpty(args.Id) && _taskCompletionDirectSignalSentCallBack.TryGetValue(args.Id, out var completion))
+            {
+                completion.TrySetResult(args);
+                _taskCompletionDirectSignalSentCallBack.Remove(args.Id);
+            }
+        }
+
+        private void RaiseDirectSignalCapabilityGrantedEvent(DirectSignalCapabilityGrantedCallBackEventArgs args)
+        {
+            LogEvent("AppDirectSignalCapabilityGranted", args);
+            OnDirectSignalCapabilityGrantedCallBack?.Invoke(this, args);
+            if (!string.IsNullOrEmpty(args.Id) && _taskCompletionDirectSignalCapabilityGrantedCallBack.TryGetValue(args.Id, out var completion))
+            {
+                completion.TrySetResult(args);
+                _taskCompletionDirectSignalCapabilityGrantedCallBack.Remove(args.Id);
+            }
         }
 
         private void DecodeWasmHostFunctionsListedReceived(IHoloNETResponse response, WebSocket.DataReceivedEventArgs dataReceivedEventArgs)
@@ -732,7 +972,8 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
             try
             {
                 Logger.Log("APP: PEER META INFO RETURNED\n", LogType.Info);
-                PeerMetaInfoResponse peerMetaInfoResponse = DeserializeResponseValue<PeerMetaInfoResponse>(response.data);
+                //PeerMetaInfoResponse peerMetaInfoResponse = DeserializeResponseValue<PeerMetaInfoResponse>(response.data);
+                PeerMetaInfoResponse peerMetaInfoResponse = DecodePeerMetaInfo(response.data);
 
                 if (peerMetaInfoResponse != null)
                     args.PeerMetaInfo = peerMetaInfoResponse;
@@ -782,9 +1023,12 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                                 {
                                     foreach (object entryKey in entry.Keys)
                                     {
-                                        decodedEntry[entryKey.ToString()] = (entry[entryKey]?.ToString() ?? "null");
-                                        keyValuePair[entryKey.ToString()] = (entry[entryKey]?.ToString() ?? "null");
-                                        keyValuePairAsString = string.Concat(keyValuePairAsString, entryKey.ToString(), "=", (entry[entryKey]?.ToString() ?? "null"), "\n");
+                                        //decodedEntry[entryKey.ToString()] = (entry[entryKey]?.ToString() ?? "null"); // current-culture formatting
+                                        decodedEntry[entryKey.ToString()] = ToInvariantString(entry[entryKey]);
+                                        //keyValuePair[entryKey.ToString()] = (entry[entryKey]?.ToString() ?? "null"); // current-culture formatting
+                                        keyValuePair[entryKey.ToString()] = ToInvariantString(entry[entryKey]);
+                                        //keyValuePairAsString = string.Concat(keyValuePairAsString, entryKey.ToString(), "=", (entry[entryKey]?.ToString() ?? "null"), "\n"); // current-culture formatting
+                                        keyValuePairAsString = string.Concat(keyValuePairAsString, entryKey.ToString(), "=", ToInvariantString(entry[entryKey]), "\n");
                                     }
 
                                     record.Bytes = bytes;
@@ -807,7 +1051,8 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                                 appResponseData[key] = tempDict;
                             }
                             else if (rawAppResponseData[key] != null)
-                                value = rawAppResponseData[key].ToString();
+                                //value = rawAppResponseData[key].ToString(); // current-culture formatting
+                                value = ToInvariantString(rawAppResponseData[key]);
                         }
 
                         if (!string.IsNullOrEmpty(value))
@@ -856,7 +1101,9 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                                         {
                                             record.Timestamp = Convert.ToInt64(value);
                                             long time = record.Timestamp / 1000; // Divide by 1,000 because we need milliseconds, not microseconds.
-                                            record.DateTime = DateTimeOffset.FromUnixTimeMilliseconds(time).DateTime.AddHours(-5).AddMinutes(1);
+                                            //record.DateTime = DateTimeOffset.FromUnixTimeMilliseconds(time).DateTime.AddHours(-5).AddMinutes(1); // fixed US-Eastern offset (+1 min): wrong everywhere else and during DST
+                                            // Holochain timestamps are microseconds since the Unix epoch (UTC).
+                                            record.DateTime = DateTimeOffset.FromUnixTimeMilliseconds(time).UtcDateTime;
                                         }
                                         break;
 
@@ -901,39 +1148,72 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
             LogEvent("AppInfoCallBack", appInfoCallBackEventArgs, string.Concat("AgentPubKey: ", appInfoCallBackEventArgs.AgentPubKey, ", DnaHash: ", appInfoCallBackEventArgs.DnaHash, ", Installed App Id: ", appInfoCallBackEventArgs.InstalledAppId));
             OnAppInfoCallBack?.Invoke(this, appInfoCallBackEventArgs);
 
+            // A retrieval waiting on this app_info (RetrieveAgentPubKeyAndDnaHashFromConductorAsync) was only completed on
+            // success (SetReadyForZomeCalls), so an error left it waiting forever. Complete it with null.
+            if (appInfoCallBackEventArgs.IsError && !string.IsNullOrEmpty(appInfoCallBackEventArgs.Id)
+                && _taskCompletionAgentPubKeyAndDnaHashRetrieved.TryGetValue(appInfoCallBackEventArgs.Id, out TaskCompletionSource<AgentPubKeyDnaHash> retrieval))
+            {
+                _taskCompletionAgentPubKeyAndDnaHashRetrieved.Remove(appInfoCallBackEventArgs.Id);
+                RetrievingAgentPubKeyAndDnaHash = false;
+                retrieval.TrySetResult(null);
+            }
+
             if (_taskCompletionAppInfoRetrieved != null && !string.IsNullOrEmpty(appInfoCallBackEventArgs.Id) && _taskCompletionAppInfoRetrieved.ContainsKey(appInfoCallBackEventArgs.Id))
             {
-                _taskCompletionAppInfoRetrieved[appInfoCallBackEventArgs.Id].SetResult(appInfoCallBackEventArgs);
+                _taskCompletionAppInfoRetrieved[appInfoCallBackEventArgs.Id].TrySetResult(appInfoCallBackEventArgs);
                 _taskCompletionAppInfoRetrieved.Remove(appInfoCallBackEventArgs.Id);
             }
         }
 
         private void RaiseZomeDataReceivedEvent(ZomeFunctionCallBackEventArgs zomeFunctionCallBackArgs)
         {
+            if (!string.IsNullOrEmpty(zomeFunctionCallBackArgs.Id))
+                UntrackPendingCall(zomeFunctionCallBackArgs.Id);
+
             LogEvent("ZomeFunctionCallBack", zomeFunctionCallBackArgs, string.Concat("Zome: ", zomeFunctionCallBackArgs.Zome, ", Zome Function: ", zomeFunctionCallBackArgs.ZomeFunction, ", Raw Zome Return Data: ", zomeFunctionCallBackArgs.RawZomeReturnData, ", Zome Return Data: ", zomeFunctionCallBackArgs.ZomeReturnData, ", Zome Return Hash: ", zomeFunctionCallBackArgs.ZomeReturnHash));
 
-            if (_callbackLookup.ContainsKey(zomeFunctionCallBackArgs.Id) && _callbackLookup[zomeFunctionCallBackArgs.Id] != null)
-                _callbackLookup[zomeFunctionCallBackArgs.Id].DynamicInvoke(this, zomeFunctionCallBackArgs);
+            //if (_callbackLookup.ContainsKey(zomeFunctionCallBackArgs.Id) && _callbackLookup[zomeFunctionCallBackArgs.Id] != null)
+            //    _callbackLookup[zomeFunctionCallBackArgs.Id].DynamicInvoke(this, zomeFunctionCallBackArgs);
+            //if (_taskCompletionZomeCallBack.ContainsKey(zomeFunctionCallBackArgs.Id) && _taskCompletionZomeCallBack[zomeFunctionCallBackArgs.Id] != null)
+            //{
+            //    _taskCompletionZomeCallBack[zomeFunctionCallBackArgs.Id].TrySetResult(zomeFunctionCallBackArgs);
+            //    _taskCompletionZomeCallBack.Remove(zomeFunctionCallBackArgs.Id);
+            //}
+            //OnZomeFunctionCallBack?.Invoke(this, zomeFunctionCallBackArgs);
+            //// If the zome call requested for this to be cached then stick it in the cache.
+            //if (_cacheZomeReturnDataLookup.ContainsKey(zomeFunctionCallBackArgs.Id) && _cacheZomeReturnDataLookup[zomeFunctionCallBackArgs.Id])
+            //    _zomeReturnDataLookup[zomeFunctionCallBackArgs.Id] = zomeFunctionCallBackArgs;
+            //_zomeLookup.Remove(zomeFunctionCallBackArgs.Id);
+            //_funcLookup.Remove(zomeFunctionCallBackArgs.Id);
+            //_callbackLookup.Remove(zomeFunctionCallBackArgs.Id);
+            //_entryDataObjectTypeLookup.Remove(zomeFunctionCallBackArgs.Id);
+            //_entryDataObjectLookup.Remove(zomeFunctionCallBackArgs.Id);
+            //_cacheZomeReturnDataLookup.Remove(zomeFunctionCallBackArgs.Id);
+            //_taskCompletionZomeCallBack.Remove(zomeFunctionCallBackArgs.Id);
 
-            if (_taskCompletionZomeCallBack.ContainsKey(zomeFunctionCallBackArgs.Id) && _taskCompletionZomeCallBack[zomeFunctionCallBackArgs.Id] != null)
-            {
-                _taskCompletionZomeCallBack[zomeFunctionCallBackArgs.Id].SetResult(zomeFunctionCallBackArgs);
-                _taskCompletionZomeCallBack.Remove(zomeFunctionCallBackArgs.Id);
-            }
+            // Read and clear this call's state first, then complete it. The old order cleaned up after completing, so a
+            // caller reusing the id (e.g. for cached results) had its new entries removed by the previous call's cleanup.
+            string id = zomeFunctionCallBackArgs.Id ?? "";
+            _callbackLookup.TryGetValue(id, out ZomeFunctionCallBack callback);
+            _taskCompletionZomeCallBack.TryGetValue(id, out TaskCompletionSource<ZomeFunctionCallBackEventArgs> completion);
+            bool cache = _cacheZomeReturnDataLookup.TryGetValue(id, out bool cacheFlag) && cacheFlag;
 
-            OnZomeFunctionCallBack?.Invoke(this, zomeFunctionCallBackArgs);
+            _zomeLookup.Remove(id);
+            _funcLookup.Remove(id);
+            _callbackLookup.Remove(id);
+            _entryDataObjectTypeLookup.Remove(id);
+            _entryDataObjectLookup.Remove(id);
+            _cacheZomeReturnDataLookup.Remove(id);
+            if (completion != null && _taskCompletionZomeCallBack.TryGetValue(id, out var current) && current == completion)
+                _taskCompletionZomeCallBack.Remove(id);
 
             // If the zome call requested for this to be cached then stick it in the cache.
-            if (_cacheZomeReturnDataLookup.ContainsKey(zomeFunctionCallBackArgs.Id) && _cacheZomeReturnDataLookup[zomeFunctionCallBackArgs.Id])
-                _zomeReturnDataLookup[zomeFunctionCallBackArgs.Id] = zomeFunctionCallBackArgs;
+            if (cache)
+                _zomeReturnDataLookup[id] = zomeFunctionCallBackArgs;
 
-            _zomeLookup.Remove(zomeFunctionCallBackArgs.Id);
-            _funcLookup.Remove(zomeFunctionCallBackArgs.Id);
-            _callbackLookup.Remove(zomeFunctionCallBackArgs.Id);
-            _entryDataObjectTypeLookup.Remove(zomeFunctionCallBackArgs.Id);
-            _entryDataObjectLookup.Remove(zomeFunctionCallBackArgs.Id);
-            _cacheZomeReturnDataLookup.Remove(zomeFunctionCallBackArgs.Id);
-            _taskCompletionZomeCallBack.Remove(zomeFunctionCallBackArgs.Id);
+            callback?.DynamicInvoke(this, zomeFunctionCallBackArgs);
+            completion?.TrySetResult(zomeFunctionCallBackArgs);
+            OnZomeFunctionCallBack?.Invoke(this, zomeFunctionCallBackArgs);
         }
 
         // New in Holochain 0.7.0 - App API.
@@ -945,7 +1225,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
             if (_taskCompletionCloneCellCreatedCallBack != null && !string.IsNullOrEmpty(cloneCellCreatedCallBackEventArgs.Id) && _taskCompletionCloneCellCreatedCallBack.ContainsKey(cloneCellCreatedCallBackEventArgs.Id))
             {
-                _taskCompletionCloneCellCreatedCallBack[cloneCellCreatedCallBackEventArgs.Id].SetResult(cloneCellCreatedCallBackEventArgs);
+                _taskCompletionCloneCellCreatedCallBack[cloneCellCreatedCallBackEventArgs.Id].TrySetResult(cloneCellCreatedCallBackEventArgs);
                 _taskCompletionCloneCellCreatedCallBack.Remove(cloneCellCreatedCallBackEventArgs.Id);
             }
         }
@@ -957,7 +1237,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
             if (_taskCompletionCloneCellEnabledCallBack != null && !string.IsNullOrEmpty(cloneCellEnabledCallBackEventArgs.Id) && _taskCompletionCloneCellEnabledCallBack.ContainsKey(cloneCellEnabledCallBackEventArgs.Id))
             {
-                _taskCompletionCloneCellEnabledCallBack[cloneCellEnabledCallBackEventArgs.Id].SetResult(cloneCellEnabledCallBackEventArgs);
+                _taskCompletionCloneCellEnabledCallBack[cloneCellEnabledCallBackEventArgs.Id].TrySetResult(cloneCellEnabledCallBackEventArgs);
                 _taskCompletionCloneCellEnabledCallBack.Remove(cloneCellEnabledCallBackEventArgs.Id);
             }
         }
@@ -969,7 +1249,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
             if (_taskCompletionCloneCellDisabledCallBack != null && !string.IsNullOrEmpty(cloneCellDisabledCallBackEventArgs.Id) && _taskCompletionCloneCellDisabledCallBack.ContainsKey(cloneCellDisabledCallBackEventArgs.Id))
             {
-                _taskCompletionCloneCellDisabledCallBack[cloneCellDisabledCallBackEventArgs.Id].SetResult(cloneCellDisabledCallBackEventArgs);
+                _taskCompletionCloneCellDisabledCallBack[cloneCellDisabledCallBackEventArgs.Id].TrySetResult(cloneCellDisabledCallBackEventArgs);
                 _taskCompletionCloneCellDisabledCallBack.Remove(cloneCellDisabledCallBackEventArgs.Id);
             }
         }
@@ -981,7 +1261,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
             if (_taskCompletionCountersigningSessionStateReturnedCallBack != null && !string.IsNullOrEmpty(countersigningSessionStateReturnedCallBackEventArgs.Id) && _taskCompletionCountersigningSessionStateReturnedCallBack.ContainsKey(countersigningSessionStateReturnedCallBackEventArgs.Id))
             {
-                _taskCompletionCountersigningSessionStateReturnedCallBack[countersigningSessionStateReturnedCallBackEventArgs.Id].SetResult(countersigningSessionStateReturnedCallBackEventArgs);
+                _taskCompletionCountersigningSessionStateReturnedCallBack[countersigningSessionStateReturnedCallBackEventArgs.Id].TrySetResult(countersigningSessionStateReturnedCallBackEventArgs);
                 _taskCompletionCountersigningSessionStateReturnedCallBack.Remove(countersigningSessionStateReturnedCallBackEventArgs.Id);
             }
         }
@@ -993,7 +1273,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
             if (_taskCompletionCountersigningSessionAbandonedCallBack != null && !string.IsNullOrEmpty(countersigningSessionAbandonedCallBackEventArgs.Id) && _taskCompletionCountersigningSessionAbandonedCallBack.ContainsKey(countersigningSessionAbandonedCallBackEventArgs.Id))
             {
-                _taskCompletionCountersigningSessionAbandonedCallBack[countersigningSessionAbandonedCallBackEventArgs.Id].SetResult(countersigningSessionAbandonedCallBackEventArgs);
+                _taskCompletionCountersigningSessionAbandonedCallBack[countersigningSessionAbandonedCallBackEventArgs.Id].TrySetResult(countersigningSessionAbandonedCallBackEventArgs);
                 _taskCompletionCountersigningSessionAbandonedCallBack.Remove(countersigningSessionAbandonedCallBackEventArgs.Id);
             }
         }
@@ -1005,7 +1285,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
             if (_taskCompletionPublishCountersigningSessionTriggeredCallBack != null && !string.IsNullOrEmpty(publishCountersigningSessionTriggeredCallBackEventArgs.Id) && _taskCompletionPublishCountersigningSessionTriggeredCallBack.ContainsKey(publishCountersigningSessionTriggeredCallBackEventArgs.Id))
             {
-                _taskCompletionPublishCountersigningSessionTriggeredCallBack[publishCountersigningSessionTriggeredCallBackEventArgs.Id].SetResult(publishCountersigningSessionTriggeredCallBackEventArgs);
+                _taskCompletionPublishCountersigningSessionTriggeredCallBack[publishCountersigningSessionTriggeredCallBackEventArgs.Id].TrySetResult(publishCountersigningSessionTriggeredCallBackEventArgs);
                 _taskCompletionPublishCountersigningSessionTriggeredCallBack.Remove(publishCountersigningSessionTriggeredCallBackEventArgs.Id);
             }
         }
@@ -1017,7 +1297,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
             if (_taskCompletionWasmHostFunctionsListedCallBack != null && !string.IsNullOrEmpty(wasmHostFunctionsListedCallBackEventArgs.Id) && _taskCompletionWasmHostFunctionsListedCallBack.ContainsKey(wasmHostFunctionsListedCallBackEventArgs.Id))
             {
-                _taskCompletionWasmHostFunctionsListedCallBack[wasmHostFunctionsListedCallBackEventArgs.Id].SetResult(wasmHostFunctionsListedCallBackEventArgs);
+                _taskCompletionWasmHostFunctionsListedCallBack[wasmHostFunctionsListedCallBackEventArgs.Id].TrySetResult(wasmHostFunctionsListedCallBackEventArgs);
                 _taskCompletionWasmHostFunctionsListedCallBack.Remove(wasmHostFunctionsListedCallBackEventArgs.Id);
             }
         }
@@ -1029,7 +1309,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
             if (_taskCompletionMemproofsProvidedCallBack != null && !string.IsNullOrEmpty(memproofsProvidedCallBackEventArgs.Id) && _taskCompletionMemproofsProvidedCallBack.ContainsKey(memproofsProvidedCallBackEventArgs.Id))
             {
-                _taskCompletionMemproofsProvidedCallBack[memproofsProvidedCallBackEventArgs.Id].SetResult(memproofsProvidedCallBackEventArgs);
+                _taskCompletionMemproofsProvidedCallBack[memproofsProvidedCallBackEventArgs.Id].TrySetResult(memproofsProvidedCallBackEventArgs);
                 _taskCompletionMemproofsProvidedCallBack.Remove(memproofsProvidedCallBackEventArgs.Id);
             }
         }
@@ -1041,7 +1321,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
             if (_taskCompletionAppPeerMetaInfoReturnedCallBack != null && !string.IsNullOrEmpty(appPeerMetaInfoReturnedCallBackEventArgs.Id) && _taskCompletionAppPeerMetaInfoReturnedCallBack.ContainsKey(appPeerMetaInfoReturnedCallBackEventArgs.Id))
             {
-                _taskCompletionAppPeerMetaInfoReturnedCallBack[appPeerMetaInfoReturnedCallBackEventArgs.Id].SetResult(appPeerMetaInfoReturnedCallBackEventArgs);
+                _taskCompletionAppPeerMetaInfoReturnedCallBack[appPeerMetaInfoReturnedCallBackEventArgs.Id].TrySetResult(appPeerMetaInfoReturnedCallBackEventArgs);
                 _taskCompletionAppPeerMetaInfoReturnedCallBack.Remove(appPeerMetaInfoReturnedCallBackEventArgs.Id);
             }
         }
@@ -1076,7 +1356,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
 
             if (_taskCompletionAppOpTimingsDumpedCallBack != null && !string.IsNullOrEmpty(appOpTimingsDumpedCallBackEventArgs.Id) && _taskCompletionAppOpTimingsDumpedCallBack.ContainsKey(appOpTimingsDumpedCallBackEventArgs.Id))
             {
-                _taskCompletionAppOpTimingsDumpedCallBack[appOpTimingsDumpedCallBackEventArgs.Id].SetResult(appOpTimingsDumpedCallBackEventArgs);
+                _taskCompletionAppOpTimingsDumpedCallBack[appOpTimingsDumpedCallBackEventArgs.Id].TrySetResult(appOpTimingsDumpedCallBackEventArgs);
                 _taskCompletionAppOpTimingsDumpedCallBack.Remove(appOpTimingsDumpedCallBackEventArgs.Id);
             }
         }
@@ -1087,20 +1367,20 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
             
             //TODO: Check this works...
             if (id == "-1")
-                _taskCompletionAgentPubKeyAndDnaHashRetrieved[id] = new TaskCompletionSource<AgentPubKeyDnaHash>();
+                _taskCompletionAgentPubKeyAndDnaHashRetrieved[id] = new TaskCompletionSource<AgentPubKeyDnaHash>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             if (_taskCompletionAgentPubKeyAndDnaHashRetrieved != null && _taskCompletionAgentPubKeyAndDnaHashRetrieved.ContainsKey(id))
             {
-                _taskCompletionAgentPubKeyAndDnaHashRetrieved[id].SetResult(new AgentPubKeyDnaHash() { AgentPubKey = HoloNETDNA.AgentPubKey, DnaHash = HoloNETDNA.DnaHash });
+                _taskCompletionAgentPubKeyAndDnaHashRetrieved[id].TrySetResult(new AgentPubKeyDnaHash() { AgentPubKey = HoloNETDNA.AgentPubKey, DnaHash = HoloNETDNA.DnaHash });
                 _taskCompletionAgentPubKeyAndDnaHashRetrieved.Remove(id);
             }
 
-            //_taskCompletionAgentPubKeyAndDnaHashRetrieved.SetResult(new AgentPubKeyDnaHash() { AgentPubKey = HoloNETDNA.AgentPubKey, DnaHash = HoloNETDNA.DnaHash });
+            //_taskCompletionAgentPubKeyAndDnaHashRetrieved.TrySetResult(new AgentPubKeyDnaHash() { AgentPubKey = HoloNETDNA.AgentPubKey, DnaHash = HoloNETDNA.DnaHash });
 
             IsReadyForZomesCalls = true;
             ReadyForZomeCallsEventArgs eventArgs = new ReadyForZomeCallsEventArgs(EndPoint, HoloNETDNA.DnaHash, HoloNETDNA.AgentPubKey);
             OnReadyForZomeCalls?.Invoke(this, eventArgs);
-            _taskCompletionReadyForZomeCalls.SetResult(eventArgs);
+            _taskCompletionReadyForZomeCalls.TrySetResult(eventArgs);
         }
     }
 }

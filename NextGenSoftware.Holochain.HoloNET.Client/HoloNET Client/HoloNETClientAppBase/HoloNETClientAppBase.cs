@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net.WebSockets;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -64,7 +64,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         private Dictionary<string, TaskCompletionSource<AppInfoCallBackEventArgs>> _taskCompletionAppInfoRetrieved = new Dictionary<string, TaskCompletionSource<AppInfoCallBackEventArgs>>();
         private Dictionary<string, TaskCompletionSource<ZomeFunctionCallBackEventArgs>> _taskCompletionZomeCallBack = new Dictionary<string, TaskCompletionSource<ZomeFunctionCallBackEventArgs>>();
         private Dictionary<string, PropertyInfo[]> _dictPropertyInfos = new Dictionary<string, PropertyInfo[]>();
-        private TaskCompletionSource<ReadyForZomeCallsEventArgs> _taskCompletionReadyForZomeCalls = new TaskCompletionSource<ReadyForZomeCallsEventArgs>();
+        private TaskCompletionSource<ReadyForZomeCallsEventArgs> _taskCompletionReadyForZomeCalls = new TaskCompletionSource<ReadyForZomeCallsEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // New in Holochain 0.7.0 - App API.
         private Dictionary<string, TaskCompletionSource<CloneCellCreatedCallBackEventArgs>> _taskCompletionCloneCellCreatedCallBack = new Dictionary<string, TaskCompletionSource<CloneCellCreatedCallBackEventArgs>>();
@@ -95,6 +95,12 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         /// Fired when the Holochain conductor sends signals data. 
         /// </summary>
         public event SignalCallBack OnSignalCallBack;
+
+        /// <summary>
+        /// System signals from the conductor (successful_countersigning, abandoned_countersigning, restore_complete, ...).
+        /// OnSignalCallBack only carries app signals; these were previously dropped entirely.
+        /// </summary>
+        public event SignalCallBack OnSystemSignalCallBack;
 
         //public delegate void ConductorDebugCallBack(object sender, ConductorDebugCallBackEventArgs e);
         //public event ConductorDebugCallBack OnConductorDebugCallBack;
@@ -164,6 +170,26 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         /// </summary>
         public event PublishCountersigningSessionTriggeredCallBack OnPublishCountersigningSessionTriggeredCallBack;
 
+
+        public delegate void AppAgentInfoReturnedCallBack(object sender, AgentInfoReturnedCallBackEventArgs e);
+        public event AppAgentInfoReturnedCallBack OnAgentInfoReturnedCallBack;
+        public delegate void AppNetworkMetricsDumpedCallBack(object sender, NetworkMetricsDumpedCallBackEventArgs e);
+        public event AppNetworkMetricsDumpedCallBack OnNetworkMetricsDumpedCallBack;
+        public delegate void AppNetworkStatsDumpedCallBack(object sender, NetworkStatsDumpedCallBackEventArgs e);
+        public event AppNetworkStatsDumpedCallBack OnNetworkStatsDumpedCallBack;
+        public delegate void AppEnabledViaAppInterfaceCallBack(object sender, AppEnabledViaAppInterfaceCallBackEventArgs e);
+        public event AppEnabledViaAppInterfaceCallBack OnAppEnabledCallBack;
+        private Dictionary<string, TaskCompletionSource<AgentInfoReturnedCallBackEventArgs>> _taskCompletionAgentInfoReturnedCallBack = new Dictionary<string, TaskCompletionSource<AgentInfoReturnedCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<NetworkMetricsDumpedCallBackEventArgs>> _taskCompletionNetworkMetricsDumpedCallBack = new Dictionary<string, TaskCompletionSource<NetworkMetricsDumpedCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<NetworkStatsDumpedCallBackEventArgs>> _taskCompletionNetworkStatsDumpedCallBack = new Dictionary<string, TaskCompletionSource<NetworkStatsDumpedCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<AppEnabledViaAppInterfaceCallBackEventArgs>> _taskCompletionAppEnabledCallBack = new Dictionary<string, TaskCompletionSource<AppEnabledViaAppInterfaceCallBackEventArgs>>();
+
+        public delegate void DirectSignalSentCallBack(object sender, DirectSignalSentCallBackEventArgs e);
+        public event DirectSignalSentCallBack OnDirectSignalSentCallBack;
+        public delegate void DirectSignalCapabilityGrantedCallBack(object sender, DirectSignalCapabilityGrantedCallBackEventArgs e);
+        public event DirectSignalCapabilityGrantedCallBack OnDirectSignalCapabilityGrantedCallBack;
+        private Dictionary<string, TaskCompletionSource<DirectSignalSentCallBackEventArgs>> _taskCompletionDirectSignalSentCallBack = new Dictionary<string, TaskCompletionSource<DirectSignalSentCallBackEventArgs>>();
+        private Dictionary<string, TaskCompletionSource<DirectSignalCapabilityGrantedCallBackEventArgs>> _taskCompletionDirectSignalCapabilityGrantedCallBack = new Dictionary<string, TaskCompletionSource<DirectSignalCapabilityGrantedCallBackEventArgs>>();
 
         public delegate void WasmHostFunctionsListedCallBack(object sender, WasmHostFunctionsListedCallBackEventArgs e);
 
@@ -325,7 +351,8 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         /// <returns></returns>
         public HoloNETConnectedEventArgs Connect(Uri holochainConductorURI, RetrieveAgentPubKeyAndDnaHashMode retrieveAgentPubKeyAndDnaHashMode = RetrieveAgentPubKeyAndDnaHashMode.Wait, bool retrieveAgentPubKeyAndDnaHashFromConductor = true, bool retrieveAgentPubKeyAndDnaHashFromSandbox = true, bool automaticallyAttemptToRetrieveFromConductorIfSandBoxFails = true, bool automaticallyAttemptToRetrieveFromSandBoxIfConductorFails = true, bool updateHoloNETDNAWithAgentPubKeyAndDnaHashOnceRetrieved = true)
         {
-            return Task.Run(() => ConnectAsync(holochainConductorURI, ConnectedCallBackMode.UseCallBackEvents, retrieveAgentPubKeyAndDnaHashMode, retrieveAgentPubKeyAndDnaHashFromConductor, retrieveAgentPubKeyAndDnaHashFromSandbox, automaticallyAttemptToRetrieveFromConductorIfSandBoxFails, automaticallyAttemptToRetrieveFromSandBoxIfConductorFails, updateHoloNETDNAWithAgentPubKeyAndDnaHashOnceRetrieved)).Result;
+            //return Task.Run(() => ConnectAsync(holochainConductorURI, ConnectedCallBackMode.UseCallBackEvents, retrieveAgentPubKeyAndDnaHashMode, retrieveAgentPubKeyAndDnaHashFromConductor, retrieveAgentPubKeyAndDnaHashFromSandbox, automaticallyAttemptToRetrieveFromConductorIfSandBoxFails, automaticallyAttemptToRetrieveFromSandBoxIfConductorFails, updateHoloNETDNAWithAgentPubKeyAndDnaHashOnceRetrieved)).Result; // returned before the conductor replied
+            return Task.Run(() => ConnectAsync(holochainConductorURI, ConnectedCallBackMode.WaitForHolochainConductorToConnect, retrieveAgentPubKeyAndDnaHashMode, retrieveAgentPubKeyAndDnaHashFromConductor, retrieveAgentPubKeyAndDnaHashFromSandbox, automaticallyAttemptToRetrieveFromConductorIfSandBoxFails, automaticallyAttemptToRetrieveFromSandBoxIfConductorFails, updateHoloNETDNAWithAgentPubKeyAndDnaHashOnceRetrieved)).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -344,7 +371,7 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         {
             _isAppInterfaceAuthenticated = false;
             _getAgentPubKeyAndDnaHashFromConductor = retrieveAgentPubKeyAndDnaHashFromConductor;
-            _taskCompletionReadyForZomeCalls = new TaskCompletionSource<ReadyForZomeCallsEventArgs>();
+            _taskCompletionReadyForZomeCalls = new TaskCompletionSource<ReadyForZomeCallsEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
            // _taskCompletionAgentPubKeyAndDnaHashRetrieved = new Dictionary<string, TaskCompletionSource<AgentPubKeyDnaHash>>(); //TODO: Need to init all of these in the code base for each call! ;-)
 
             if (string.IsNullOrEmpty(holochainConductorURI))
@@ -365,7 +392,8 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         /// <param name="updateHoloNETDNAWithAgentPubKeyAndDnaHashOnceRetrieved">Set this to true (default) to automatically update the [HoloNETHoloNETDNA](#holonetconfig) once it has retrieved the DnaHash & AgentPubKey.</param>
         public HoloNETConnectedEventArgs Connect(string holochainConductorURI = "", bool retrieveAgentPubKeyAndDnaHashFromConductor = true, bool retrieveAgentPubKeyAndDnaHashFromSandbox = false, bool automaticallyAttemptToRetrieveFromConductorIfSandBoxFails = true, bool automaticallyAttemptToRetrieveFromSandBoxIfConductorFails = true, bool updateHoloNETDNAWithAgentPubKeyAndDnaHashOnceRetrieved = true)
         {
-            return Task.Run(() => ConnectAsync(holochainConductorURI, ConnectedCallBackMode.UseCallBackEvents, RetrieveAgentPubKeyAndDnaHashMode.UseCallBackEvents, retrieveAgentPubKeyAndDnaHashFromConductor, retrieveAgentPubKeyAndDnaHashFromSandbox, automaticallyAttemptToRetrieveFromConductorIfSandBoxFails, automaticallyAttemptToRetrieveFromSandBoxIfConductorFails, updateHoloNETDNAWithAgentPubKeyAndDnaHashOnceRetrieved)).Result;
+            //return Task.Run(() => ConnectAsync(holochainConductorURI, ConnectedCallBackMode.UseCallBackEvents, RetrieveAgentPubKeyAndDnaHashMode.UseCallBackEvents, retrieveAgentPubKeyAndDnaHashFromConductor, retrieveAgentPubKeyAndDnaHashFromSandbox, automaticallyAttemptToRetrieveFromConductorIfSandBoxFails, automaticallyAttemptToRetrieveFromSandBoxIfConductorFails, updateHoloNETDNAWithAgentPubKeyAndDnaHashOnceRetrieved)).Result; // returned before the conductor replied
+            return Task.Run(() => ConnectAsync(holochainConductorURI, ConnectedCallBackMode.WaitForHolochainConductorToConnect, RetrieveAgentPubKeyAndDnaHashMode.Wait, retrieveAgentPubKeyAndDnaHashFromConductor, retrieveAgentPubKeyAndDnaHashFromSandbox, automaticallyAttemptToRetrieveFromConductorIfSandBoxFails, automaticallyAttemptToRetrieveFromSandBoxIfConductorFails, updateHoloNETDNAWithAgentPubKeyAndDnaHashOnceRetrieved)).GetAwaiter().GetResult();
         }
 
 
@@ -411,7 +439,15 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                 base.WebSocket_OnConnected(sender, e);
 
                 if (DeferConnectedNotification)
+                {
+                    // ConnectAsync only authenticates when it waits for the connection; in UseCallBackEvents mode nothing
+                    // sent the token, so the client never became ready. Authenticate here (it raises OnConnected and
+                    // continues the start-up once the token is accepted).
+                    if (!_connectingAsync)
+                        FireAndForget(AuthenticateConnectionAsync(), "AuthenticateConnectionAsync");
+
                     return;
+                }
 
                 BeginPostConnectInitialization();
             }
@@ -438,6 +474,15 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                     else
                         FireAndForget(RetrieveAgentPubKeyAndDnaHashFromConductorAsync(null, null, RetrieveAgentPubKeyAndDnaHashMode.UseCallBackEvents), "RetrieveAgentPubKeyAndDnaHashFromConductorAsync");
                 }
+
+                // No AgentPubKey/DnaHash and nothing retrieving them: the client can never become ready, so anything awaiting
+                // WaitTillReadyForZomeCallsAsync (e.g. the ORM's WaitTillHoloNETInitializedAsync) used to wait forever.
+                else if (!RetrievingAgentPubKeyAndDnaHash)
+                {
+                    string msg = "Connected, but HoloNET can't make zome calls: the AgentPubKey and DnaHash are not set and retrieving them was turned off. Set HoloNETDNA.AgentPubKey and HoloNETDNA.DnaHash, or connect with retrieval enabled.";
+                    Logger.Log(msg, LogType.Warning);
+                    _taskCompletionReadyForZomeCalls.TrySetResult(new ReadyForZomeCallsEventArgs(EndPoint, HoloNETDNA.DnaHash, HoloNETDNA.AgentPubKey) { IsError = true, Message = msg });
+                }
             }
             catch (Exception ex)
             {
@@ -454,20 +499,27 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
                 {
                     string requests = "";
 
+                    // _zomeLookup[id] threw for pending non-zome requests, which skipped base.WebSocket_OnDisconnected (so
+                    // waiting calls and a waiting DisconnectAsync never completed).
                     foreach (string id in _pendingRequests)
-                        requests = string.Concat(requests, ", id: ", id, "| zome: ", _zomeLookup[id], "| function: ", _funcLookup[id]);
+                        //requests = string.Concat(requests, ", id: ", id, "| zome: ", _zomeLookup[id], "| function: ", _funcLookup[id]);
+                        requests = string.Concat(requests, ", id: ", id, "| zome: ", GetItemFromCache(id, _zomeLookup), "| function: ", GetItemFromCache(id, _funcLookup));
 
                     e.Reason = $"Error Occured. The WebSocket closed with the following requests still in progress: {requests}. Reason: {e.Reason}";
 
-                    _pendingRequests.Clear();
-                    HandleError(e.Reason, null);
+                    //_pendingRequests.Clear();
+                    //HandleError(e.Reason, null);
+                    ReportError(e.Reason, null);
                 }
-
-                base.WebSocket_OnDisconnected(sender, e);
             }
             catch (Exception ex)
             {
-                HandleError("Error in HoloNETClient.WebSocket_OnDisconnected method.", ex);
+                //HandleError("Error in HoloNETClient.WebSocket_OnDisconnected method.", ex);
+                ReportError("Error in HoloNETClient.WebSocket_OnDisconnected method.", ex);
+            }
+            finally
+            {
+                base.WebSocket_OnDisconnected(sender, e);
             }
         }
     }

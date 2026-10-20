@@ -11,6 +11,42 @@ round-trips and do not require a conductor).
 > was used. The sections after it are the original plan; they are kept for the hApp-level
 > tests (install, zome calls) that are still to do.
 
+> **Holochain 0.7.1:** the same suite runs against a 0.7.1 conductor (96/96 pass on both versions). Use 0.7.1
+> binaries and hApps built with hdk 0.7.1 / hdi 0.8.1 (OASIS hApp main; tag `holochain-0.7.0` for 0.7.0); a 0.7.0-built hApp fails
+> on 0.7.1 with "callback has invalid parameters". Start a fresh sandbox per suite run.
+
+## Running everything (both Holochain versions)
+
+```bash
+scripts/run-live-tests.sh 0.7.1
+scripts/run-live-tests.sh 0.7.0
+```
+
+It runs the Client/ORM/API tests (`NextGenSoftware.Holochain.HoloNET.Client.Tests`) and the HoloNET Manager tests
+(`NextGenSoftware.Holochain.HoloNET.Manager.Tests`, WPF, Windows only); `PROJECTS=client` or `PROJECTS=manager` runs one,
+`HAPP_OVERRIDE=<absolute path>` tries another hApp. Build the test hApps with `scripts/build-test-happs.sh <version>`.
+
+Each run starts a fresh sandbox for that version (bundled `hc`, and `holochain.exe` from
+`%APPDATA%\NextGenSoftware\HoloNET\<version>\`, so Windows Firewall asks once per version), then runs the whole
+suite with coverage into `.holochain-test/coverage-<version>`. The sandbox uses Holochain's in-memory network
+(`hc sandbox create ... network mem`): the tests run offline, and the HyperNET tests' players (several agents on one
+conductor) reach each other without the public bootstrap and relay servers. Test hApps live in
+`.holochain-test/happ-070*` and `happ-071*` (gitignored; build 0.7.1 ones from OASIS-Holochain-hApp main, 0.7.0 from its
+`holochain-0.7.0-maintenance` branch).
+
+`LiveHyperNETTests` run three players in one zone: joins and leaves, unreliable and reliable messages, ping, area of
+interest, position updates and zone changes. Each player is its own installed app, so its own agent.
+
+Conductor auto-start / auto-shutdown tests start and kill conductors, so they only run on request and with no other
+conductor running:
+
+```bash
+cd NextGenSoftware.Holochain.HoloNET.Client.Tests && HOLONET_LIVE_AUTOSTART=1 HOLONET_LIVE_EMBEDDED=1 dotnet test -p:Embedded=true --filter "FullyQualifiedName~LiveConductorAutoStartTests"
+```
+
+Coverage: merge the reports with ReportGenerator, then `python scripts/classify_uncovered.py` lists every uncovered line
+(split into defensive catch blocks and the rest).
+
 ## Quick start: run the live tests (Windows)
 
 1. Download the official 0.7.0 Windows builds from
@@ -27,9 +63,9 @@ round-trips and do not require a conductor).
    ```
 3. In another shell, run the tests:
    ```bash
-   HOLONET_LIVE_ADMIN_URI=ws://localhost:65464 dotnet test NextGenSoftware.Holochain.HoloNET.Client.Tests --filter "FullyQualifiedName~LiveConductorTests"
+   HOLONET_LIVE_ADMIN_URI=ws://localhost:65464 dotnet test NextGenSoftware.Holochain.HoloNET.Client.Tests --filter "FullyQualifiedName~LiveConductor"
    ```
-   If `HOLONET_LIVE_ADMIN_URI` is not set, these tests return immediately, so normal `dotnet test`
+   If `HOLONET_LIVE_ADMIN_URI` is not set, these tests are reported as skipped, so normal `dotnet test`
    and CI runs don't need a conductor.
 
 What the live tests cover: the raw wire envelope (generate agent key, list apps, list DNAs, and a
@@ -42,7 +78,7 @@ call), point `HOLONET_LIVE_HAPP_PATH` at a hApp built for 0.7.0. The OASIS hApp 
 (`hdk 0.7.0`, coordinator zome `oasis`):
 
 ```bash
-HOLONET_LIVE_ADMIN_URI=ws://localhost:65464 HOLONET_LIVE_HAPP_PATH='C:\Source\OASIS-Holochain-hApp\workdir\oasis.happ' dotnet test NextGenSoftware.Holochain.HoloNET.Client.Tests --filter "FullyQualifiedName~LiveConductorTests"
+HOLONET_LIVE_ADMIN_URI=ws://localhost:65464 HOLONET_LIVE_HAPP_PATH='C:\Source\OASIS-Holochain-hApp\workdir\oasis.happ' dotnet test NextGenSoftware.Holochain.HoloNET.Client.Tests --filter "FullyQualifiedName~LiveConductor"
 ```
 
 Older hApps such as `HoloNET-Manager/.../OASIS_hAPP/oasis.happ` use `manifest_version: "1"`, and

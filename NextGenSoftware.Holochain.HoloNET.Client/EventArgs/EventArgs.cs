@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using NextGenSoftware.Holochain.HoloNET.Client.Interfaces;
@@ -25,6 +25,9 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
     public class HoloNETDisconnectedEventArgs : CallBackBaseEventArgs
     {
         public bool IsDisconnected { get; set; }
+
+        /// <summary>Result of the automatic conductor shutdown that follows a disconnect (WaitForHolochainConductorToDisconnect mode only).</summary>
+        public HolochainConductorsShutdownEventArgs HolochainConductorsShutdownResult { get; set; }
     }
 
     public class HoloNETErrorEventArgs : EventArgs
@@ -56,6 +59,13 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         public Dictionary<string, object> ZomeReturnData { get; set; }
         public Dictionary<object, object> RawZomeReturnData { get; set; }
         public string ZomeReturnHash { get; set; }
+
+        /// <summary>
+        /// The zome function's return value as decoded msgpack, whatever its type: null for (), a bool, number or string,
+        /// a byte[] hash, a list (e.g. Vec&lt;ActionHash&gt;) or a map. Records / KeyValuePair are also filled for record results.
+        /// </summary>
+        public object ZomeReturnValue { get; set; }
+
         public List<Record> Records { get; set; } = new List<Record>();
         public Dictionary<string, string> KeyValuePair { get; set; }
         public string KeyValuePairAsString { get; set; }
@@ -150,6 +160,15 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
         public ISignalData RawSignalData { get;set;}
         public Dictionary<string, object> SignalData { get; set; }
         public string SignalDataAsString { get; set; }
+
+        /// <summary>True for a direct signal from another agent (send_direct_signal), false for one emitted by a zome.</summary>
+        public bool IsDirectSignal { get; set; }
+
+        /// <summary>Holochain 0.7.1+: the agent who sent a direct signal (null for zome signals and on 0.7.0).</summary>
+        public string FromAgentPubKey { get; set; }
+
+        /// <summary>For system signals, the variant (e.g. "successful_countersigning", "restore_complete").</summary>
+        public string SystemSignalType { get; set; }
     }
 
     public class ConductorDebugCallBackEventArgs : CallBackBaseEventArgs
@@ -196,6 +215,28 @@ namespace NextGenSoftware.Holochain.HoloNET.Client
     public class PublishCountersigningSessionTriggeredCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
     {
 
+    }
+
+    /// <summary>Result of the app interface's enable_app (Holochain 0.7: enables the app this connection is authenticated for).</summary>
+    public class AppEnabledViaAppInterfaceCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+    }
+
+    /// <summary>Result of the admin interface's dump_conductor_state: the conductor's state as JSON.</summary>
+    public class ConductorStateDumpedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+        public string DumpedStateJSON { get; set; }
+    }
+
+    /// <summary>Result of send_direct_signal (delivery is best effort; the conductor only confirms it was sent).</summary>
+    public class DirectSignalSentCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+    }
+
+    /// <summary>Result of grant_direct_signal_capability (Holochain 0.7.1+): the action hash of the committed grant.</summary>
+    public class DirectSignalCapabilityGrantedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
+    {
+        public byte[] ActionHash { get; set; }
     }
 
     public class WasmHostFunctionsListedCallBackEventArgs : HoloNETDataReceivedBaseEventArgs
